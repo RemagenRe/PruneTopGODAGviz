@@ -1,0 +1,19 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.tar.gz
+*.Rcheck
+doc/
+Meta/
+# Private environment and credentials
+.Renviron
+.Renviron.*
+.Rprofile
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+id_rsa
+id_ed25519

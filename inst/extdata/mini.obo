@@ -1,0 +1,152 @@
+format-version: 1.2
+data-version: test/mini
+ontology: go
+
+[Term]
+id: GO:0008150
+name: biological_process
+namespace: biological_process
+def: "The biological processes of a living organism." []
+
+[Term]
+id: GO:0009987
+name: cellular process
+namespace: biological_process
+is_a: GO:0008150 ! biological_process
+
+[Term]
+id: GO:0008152
+name: metabolic process
+namespace: biological_process
+is_a: GO:0008150 ! biological_process
+
+[Term]
+id: GO:0015979
+name: photosynthesis
+namespace: biological_process
+is_a: GO:0008152 ! metabolic process
+
+[Term]
+id: GO:0006091
+name: generation of precursor metabolites and energy
+namespace: biological_process
+is_a: GO:0008152 ! metabolic process
+
+[Term]
+id: GO:0019684
+name: photosynthesis, light reaction
+namespace: biological_process
+is_a: GO:0015979 ! photosynthesis
+
+[Term]
+id: GO:0009765
+name: photosynthesis, light harvesting
+namespace: biological_process
+relationship: part_of GO:0019684 ! photosynthesis, light reaction
+
+[Term]
+id: GO:0006950
+name: response to stress
+namespace: biological_process
+is_a: GO:0008150 ! biological_process
+
+[Term]
+id: GO:0009409
+name: response to cold
+namespace: biological_process
+is_a: GO:0006950 ! response to stress
+
+[Term]
+id: GO:0009415
+name: response to water
+namespace: biological_process
+alt_id: GO:9900001
+alt_id: GO:9900002
+is_a: GO:0008150 ! biological_process
+
+[Term]
+id: GO:0009414
+name: response to water deprivation
+namespace: biological_process
+is_a: GO:0009415 ! response to water
+
+[Term]
+id: GO:0009651
+name: response to salt stress
+namespace: biological_process
+is_a: GO:0006950 ! response to stress
+
+[Term]
+id: GO:0000003
+name: obsolete reproduction
+namespace: biological_process
+is_obsolete: true
+
+[Term]
+id: GO:0003674
+name: molecular_function
+namespace: molecular_function
+
+[Term]
+id: GO:0003824
+name: catalytic activity
+namespace: molecular_function
+is_a: GO:0003674 ! molecular_function
+
+[Term]
+id: GO:0016787
+name: hydrolase activity
+namespace: molecular_function
+is_a: GO:0003824 ! catalytic activity
+
+[Term]
+id: GO:0003676
+name: nucleic acid binding
+namespace: molecular_function
+is_a: GO:0003674 ! molecular_function
+
+[Term]
+id: GO:0003677
+name: DNA binding
+namespace: molecular_function
+is_a: GO:0003676 ! nucleic acid binding
+
+[Term]
+id: GO:0005575
+name: cellular_component
+namespace: cellular_component
+
+[Term]
+id: GO:0005634
+name: nucleus
+namespace: cellular_component
+is_a: GO:0005575 ! cellular_component
+
+[Term]
+id: GO:0005737
+name: cytoplasm
+namespace: cellular_component
+is_a: GO:0005575 ! cellular_component
+
+[Term]
+id: GO:0009507
+name: chloroplast
+namespace: cellular_component
+is_a: GO:0005737 ! cytoplasm
+
+[Term]
+id: GO:0009579
+name: thylakoid
+namespace: cellular_component
+is_a: GO:0009507 ! chloroplast
+
+[Term]
+id: GO:0009535
+name: chloroplast thylakoid membrane
+namespace: cellular_component
+relationship: part_of GO:0009579 ! thylakoid
+
+[Typedef]
+id: part_of
+name: part of
+namespace: external

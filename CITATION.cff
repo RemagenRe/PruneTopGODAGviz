@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite this repository and the specific version used in your analysis."
+type: software
+title: "PruneTopGODAGviz: Publication-Quality Pruned Gene Ontology DAG Visualisation"
+authors:
+  - family-names: "Liu"
+    given-names: "Yuzhou"
+version: 0.1.0
+repository-code: "https://github.com/RemagenRe/PruneTopGODAGviz"
+license: MIT

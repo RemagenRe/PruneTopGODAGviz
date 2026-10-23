@@ -1,0 +1,12 @@
+citHeader("To cite PruneTopGODAGviz in publications use:")
+
+bibentry(
+  bibtype = "Manual",
+  title = "PruneTopGODAGviz: Publication-Quality Pruned Gene Ontology DAG Visualisation",
+  author = person("Yuzhou Liu"),
+  year = "2026",
+  note = "R package version 0.1.0",
+  url = "https://github.com/RemagenRe/PruneTopGODAGviz"
+)
+
+citFooter("Please also cite the Gene Ontology Consortium, PANTHER, and the genome annotation resources listed in inst/extdata/DATA_PROVENANCE.md.")

@@ -1,0 +1,112 @@
+---
+title: "Drawing a pruned GO DAG"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Drawing a pruned GO DAG}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 9, fig.height = 6)
+```
+
+This vignette uses a small synthetic data set shipped with the package
+(`mini.obo`, `example_mini_annotation.csv`, `example_mini_genes.txt`), so no
+network access is required.
+
+## Read the annotation
+
+```{r}
+library(PruneTopGODAGviz)
+
+anno_file <- system.file("extdata", "example_mini_annotation.csv",
+                         package = "PruneTopGODAGviz")
+anno <- read_go_annotation(anno_file, verbose = FALSE)
+anno
+```
+
+`read_go_annotation()` detects the identifier, GO, name and ontology columns,
+deduplicates transcript--GO pairs and stores the annotated background per
+ontology.
+
+## Enrichment
+
+```{r}
+genes <- readLines(system.file("extdata", "example_mini_genes.txt",
+                               package = "PruneTopGODAGviz"))
+ego <- enrich_go(genes, anno, ont = "BP", verbose = FALSE)
+ego
+```
+
+Statistics are computed by `enrich_go()` and are not modified later.
+
+## Build the GO graph
+
+```{r}
+obo <- system.file("extdata", "mini.obo", package = "PruneTopGODAGviz")
+dag <- go_dag("BP", obo = obo, verbose = FALSE)
+dag
+```
+
+With a real analysis, call `go_dag("BP")` once: the `go-basic.obo` file is
+downloaded and cached automatically, or pass a local `obo` path for offline use.
+`read_obo()` keeps `is_a` and `part_of` relations separately.
+
+## Prune for display
+
+```{r}
+d <- prune_go_dag(
+    ego, dag = dag,
+    top_n = 4,
+    p_cutoff = 0.05,
+    collapse_chains = TRUE,
+    cluster_jaccard = 0.85,
+    max_nodes = 30,
+    verbose = FALSE
+)
+d
+```
+
+Every node is annotated with three label lines, the input genes and the
+background counts. The `dropped` table records why terms are absent.
+
+```{r}
+head(d$nodes[, c("id", "name", "p.adjust", "n_in_term", "n_bg_term")])
+```
+
+## Plot
+
+```{r, fig.width = 10, fig.height = 5}
+p <- plot_go_dag(d)
+p
+```
+
+The layout is deterministic and collision-free; long edges are routed around
+the boxes. Term names are wrapped and all text is measured before placement.
+
+Use `save_go_dag()` to write both a vector PDF and an 800 dpi PNG:
+
+```{r, eval = FALSE}
+save_go_dag(d, "BP_pruned", plot = p, dpi = 800)
+```
+
+and `plot_go_dag_interactive()` for a self-contained HTML widget with tooltips:
+
+```{r, eval = FALSE}
+plot_go_dag_interactive(d, file = "BP_pruned.html")
+```
+
+## Crop a branch and document the decision
+
+```{r}
+d2 <- prune_go_dag(ego, dag = dag, top_n = 4,
+                   drop_subtree = "GO:0006950", max_nodes = 30, verbose = FALSE)
+setdiff(d$nodes$id, d2$nodes$id)
+d2$dropped[d2$dropped$action == "drop_subtree", c("go_id", "name", "action")]
+```
+
+`write_prune_table()` writes the complete kept/removed table for the methods
+section or supplementary material.

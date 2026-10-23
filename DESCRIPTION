@@ -1,0 +1,48 @@
+Package: PruneTopGODAGviz
+Title: Publication-Quality Pruned Gene Ontology DAG Visualisation
+Version: 0.1.0
+Authors@R:
+    person("Yuzhou Liu", email = "remagenre@users.noreply.github.com",
+           role = c("aut", "cre"))
+Description: Reads transcript-level Gene Ontology annotation tables, performs
+    over-representation analysis with a self-contained hypergeometric test, and draws
+    publication-quality directed acyclic graphs of enriched terms with
+    user-controlled branch pruning, chain collapsing and redundancy merging.
+    Layout is deterministic and collision-free, and figures are exported as
+    vector PDF, PNG, SVG or TIFF.  An interactive Shiny editor supports
+    click-to-delete branch pruning, free dragging with a magnetic layout and
+    live colour control; standalone HTML output is available through
+    'ggiraph'.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 8.0.0
+Depends:
+    R (>= 4.2)
+Imports:
+    data.table,
+    ggplot2,
+    grDevices,
+    grid,
+    igraph,
+    rlang,
+    stats,
+    systemfonts,
+    tools,
+    utils
+Suggests:
+    GO.db,
+    AnnotationDbi,
+    ggiraph,
+    htmltools,
+    htmlwidgets,
+    shiny,
+    visNetwork,
+    colourpicker,
+    ragg,
+    svglite,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3

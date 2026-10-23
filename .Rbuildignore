@@ -1,0 +1,11 @@
+^\.github$
+^.*\.Rproj$
+^\.Rproj\.user$
+^doc$
+^Meta$
+^pkgdown$
+^\.git$
+^\.Rhistory$
+^CITATION\.cff$
+^webapp$
+^docs$
