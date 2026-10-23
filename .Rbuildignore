@@ -9,3 +9,4 @@
 ^CITATION\.cff$
 ^webapp$
 ^docs$
+^\.zenodo\.json$

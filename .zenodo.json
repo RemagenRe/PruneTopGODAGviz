@@ -1,0 +1,12 @@
+{
+  "title": "PruneTopGODAGviz: Publication-Quality Pruned Gene Ontology DAG Visualisation",
+  "description": "An R package and Shiny editor for transcript- or gene-level GO over-representation analysis, pruned GO DAGs, and publication-quality PDF/PNG/SVG/TIFF export. Includes compressed PANTHER annotation tables for Arabidopsis, maize, rice, soybean, human and mouse.",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "creators": [
+    {"name": "Liu, Yuzhou"}
+  ],
+  "keywords": ["Gene Ontology", "GO enrichment", "DAG visualization", "R", "Shiny", "PANTHER"],
+  "related_identifiers": []
+}
