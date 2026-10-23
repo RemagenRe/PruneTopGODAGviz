@@ -34,16 +34,6 @@ The package contains compressed PANTHER annotation tables for Arabidopsis,
 maize, rice, soybean, human and mouse, plus example data. No external `data/`
 directory is required after installation.
 
-## Browser preview
-
-A Shinylive preview of the interactive editor is available at:
-
-```text
-https://remagenre.github.io/PruneTopGODAGviz/
-```
-
-The browser demo is illustrative only; enrichment, uploads and publication
-export run in the installed R package.
 ## Quick start
 
 ```r
