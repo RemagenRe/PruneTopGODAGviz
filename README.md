@@ -107,3 +107,5 @@ PANTHER and the genome annotation resources listed in
 
 Package code: MIT. Built-in annotation tables retain the terms of their
 upstream sources; see `inst/extdata/DATA_PROVENANCE.md`.
+
+[中文介绍](README_zh.md)
