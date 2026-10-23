@@ -89,6 +89,11 @@ run_go_workflow(genes, anno, outdir = "GO_figures",
 
 ## Citation
 
+Concept DOI: https://doi.org/10.5281/zenodo.23587324
+
+Version DOI for this release: https://doi.org/10.5281/zenodo.23587325
+
+
 ```r
 citation("PruneTopGODAGviz")
 ```

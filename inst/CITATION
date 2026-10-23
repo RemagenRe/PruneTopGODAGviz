@@ -6,7 +6,7 @@ bibentry(
   author = person("Yuzhou Liu"),
   year = "2026",
   note = "R package version 0.1.0",
-  url = "https://github.com/RemagenRe/PruneTopGODAGviz"
+  url = "https://doi.org/10.5281/zenodo.23587324"
 )
 
 citFooter("Please also cite the Gene Ontology Consortium, PANTHER, and the genome annotation resources listed in inst/extdata/DATA_PROVENANCE.md.")
