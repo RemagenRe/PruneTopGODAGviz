@@ -1,3 +1,11 @@
+# PruneTopGODAGviz 0.1.2
+
+* Enrichment now runs in a background `ExtendedTask`/future worker, so the
+  Shiny interface stays responsive during long calculations and after the
+  browser tab is backgrounded.
+* Added `future` and `promises` to the optional Shiny dependencies.
+* Updated dependency instructions for GO.db/AnnotationDbi and background
+  enrichment.
 # PruneTopGODAGviz 0.1.1
 
 * `GO.db` and `AnnotationDbi` are now mandatory dependencies, installed from

@@ -26,7 +26,7 @@ Before `run_app()`, install the Shiny/export packages explicitly:
 
 ```r
 install.packages(c(
-  "shiny", "visNetwork", "colourpicker",
+  "shiny", "visNetwork", "colourpicker", "future", "promises",
   "ragg", "svglite", "ggiraph", "htmlwidgets", "htmltools"
 ))
 ```
@@ -45,14 +45,14 @@ install.packages("pak")
 pak::pkg_install("RemagenRe/PruneTopGODAGviz", dependencies = TRUE)
 
 # reproducible release
-pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.1")
+pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.2")
 ```
 
 Or install the release tarball:
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.1/PruneTopGODAGviz_0.1.1.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.2/PruneTopGODAGviz_0.1.2.tar.gz",
   repos = NULL, type = "source"
 )
 ```
