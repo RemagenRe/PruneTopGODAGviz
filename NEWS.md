@@ -1,3 +1,7 @@
+# PruneTopGODAGviz 0.1.6
+
+* Finalize q-value calculation for the release source.
+* Include the example figure in README and the package.
 # PruneTopGODAGviz 0.1.5
 
 * Calculate `qvalue` in enrichment results instead of returning an all-NA
