@@ -32,6 +32,8 @@ test_that("enrich_go uses a hypergeometric over-representation test", {
     expect_equal(ego$result$Count, unname(k[match(ego$result$ID, q_terms)]))
     expect_true(all(c("FoldEnrichment", "RichFactor", "BgCount") %in%
                         names(ego$result)))
+    expect_false(anyNA(ego$result$qvalue))
+    expect_true(all(ego$result$qvalue >= 0 & ego$result$qvalue <= 1))
 })
 
 test_that("unannotated input identifiers trigger a warning", {

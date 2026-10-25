@@ -85,6 +85,7 @@ enrich_go <- function(gene, annotation, ont = "BP", universe = NULL,
         obj <- NULL
     } else {
         res <- .augment_enrich_result(ego$result)
+        res$qvalue <- .storey_qvalue(res$pvalue)
         ego$result <- res
         ego$ontology <- ont
         ego$keytype <- keytype %||% annotation$keytype %||% "transcript"
@@ -104,6 +105,19 @@ enrich_go <- function(gene, annotation, ont = "BP", universe = NULL,
     out
 }
 
+.storey_qvalue <- function(p, lambda = 0.5) {
+    p <- as.numeric(p)
+    n <- length(p)
+    if (!n) return(numeric())
+    pi0 <- mean(p >= lambda, na.rm = TRUE) / (1 - lambda)
+    pi0 <- min(1, pi0)
+    if (!is.finite(pi0) || pi0 <= 0) pi0 <- 1
+    ord <- order(p)
+    q <- numeric(n)
+    q[ord] <- pi0 * n * p[ord] / seq_len(n)
+    q <- rev(cummin(rev(q)))
+    pmin(pmax(q, 0), 1)
+}
 .ora_enrich <- function(hit, universe, t2g, t2n, pAdjustMethod,
                         minGSSize, maxGSSize) {
     all_ids <- unique(as.character(t2g$transcript))
@@ -154,7 +168,7 @@ enrich_go <- function(gene, annotation, ont = "BP", universe = NULL,
         zScore = as.numeric(zscore),
         pvalue = as.numeric(pvalue),
         p.adjust = stats::p.adjust(pvalue, method = pAdjustMethod),
-        qvalue = NA_real_,
+        qvalue = .storey_qvalue(pvalue),
         geneID = as.character(gene_id),
         Count = as.integer(k),
         stringsAsFactors = FALSE
@@ -221,6 +235,10 @@ as_go_enrich <- function(x, annotation, ont = NULL, universe = NULL, gene = NULL
     res$FoldEnrichment <- as.numeric(fe)
     res$RichFactor <- as.numeric(gr$num / br$num)
     res$BgCount <- as.integer(br$num)
+    if ("pvalue" %in% names(res) &&
+        (!"qvalue" %in% names(res) || all(is.na(res$qvalue)))) {
+        res$qvalue <- .storey_qvalue(res$pvalue)
+    }
     res
 }
 
