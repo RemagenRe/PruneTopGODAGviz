@@ -8,6 +8,10 @@ self-contained hypergeometric over-representation test, and draws a GO DAG.
 The graph can be pruned, rearranged, simplified and exported without changing
 the enrichment result.
 
+![Example PruneTopGODAGviz GO DAG](man/figures/PruneTopGODAGviz_example.png)
+
+*Example PruneTopGODAGviz output.*
+
 ## Features
 
 - Reads transcript- or gene-level GO annotation tables.
@@ -214,7 +218,8 @@ plot_go_dag_interactive(pruned, file = "BP_pruned.html")
 - Default resolution: 800 dpi
 
 Pruning changes the displayed DAG only. The enrichment statistics and the
-pruned result table remain available.
+pruned result table remain available. Exported tables include `pvalue`,
+`p.adjust` and `qvalue`.
 
 ## Citation
 

@@ -7,6 +7,10 @@
 检验完成 GO over-representation analysis，再绘制 GO DAG。图形可以剪枝、重排、
 折叠和导出，富集结果保持不变。
 
+![PruneTopGODAGviz 示例 GO DAG](man/figures/PruneTopGODAGviz_example.png)
+
+*PruneTopGODAGviz 示例输出。*
+
 ## 主要功能
 
 - 读取 transcript 或 gene 级别的 GO 注释表；
@@ -207,7 +211,8 @@ plot_go_dag_interactive(pruned, file = "BP_pruned.html")
 - SVG：使用 `svglite`；
 - 默认分辨率：800 dpi。
 
-剪枝只改变显示的 DAG，富集统计值和结果表保持不变。
+剪枝只改变显示的 DAG，富集统计值和结果表保持不变。导出的表格包含
+`pvalue`、`p.adjust` 和 `qvalue`。
 
 ## 引用
 
