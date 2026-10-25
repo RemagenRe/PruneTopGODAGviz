@@ -113,9 +113,10 @@ enrich_go <- function(gene, annotation, ont = "BP", universe = NULL,
     pi0 <- min(1, pi0)
     if (!is.finite(pi0) || pi0 <= 0) pi0 <- 1
     ord <- order(p)
+    q_sorted <- pi0 * n * p[ord] / seq_len(n)
+    q_sorted <- rev(cummin(rev(q_sorted)))
     q <- numeric(n)
-    q[ord] <- pi0 * n * p[ord] / seq_len(n)
-    q <- rev(cummin(rev(q)))
+    q[ord] <- q_sorted
     pmin(pmax(q, 0), 1)
 }
 .ora_enrich <- function(hit, universe, t2g, t2n, pAdjustMethod,
@@ -235,9 +236,14 @@ as_go_enrich <- function(x, annotation, ont = NULL, universe = NULL, gene = NULL
     res$FoldEnrichment <- as.numeric(fe)
     res$RichFactor <- as.numeric(gr$num / br$num)
     res$BgCount <- as.integer(br$num)
-    if ("pvalue" %in% names(res) &&
-        (!"qvalue" %in% names(res) || all(is.na(res$qvalue)))) {
-        res$qvalue <- .storey_qvalue(res$pvalue)
+    if ("pvalue" %in% names(res)) {
+        q_all <- .storey_qvalue(res$pvalue)
+        if (!"qvalue" %in% names(res)) {
+            res$qvalue <- q_all
+        } else {
+            fill <- is.na(res$qvalue) & !is.na(res$pvalue)
+            res$qvalue[fill] <- q_all[fill]
+        }
     }
     res
 }

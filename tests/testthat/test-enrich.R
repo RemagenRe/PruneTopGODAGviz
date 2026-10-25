@@ -34,6 +34,8 @@ test_that("enrich_go uses a hypergeometric over-representation test", {
                         names(ego$result)))
     expect_false(anyNA(ego$result$qvalue))
     expect_true(all(ego$result$qvalue >= 0 & ego$result$qvalue <= 1))
+    ord <- order(ego$result$pvalue)
+    expect_true(all(diff(ego$result$qvalue[ord]) >= -1e-12))
 })
 
 test_that("unannotated input identifiers trigger a warning", {
@@ -66,4 +68,17 @@ test_that("custom universe excludes unannotated query IDs from GeneRatio", {
                       verbose = FALSE)
     expect_true(all(p$nodes$n_in_universe == mapped))
     expect_true(all(p$nodes$n_bg_universe == length(e$universe)))
+})
+test_that("q-values are calculated on sorted p-values and mapped back", {
+    q <- PruneTopGODAGviz:::.storey_qvalue(c(0.01, 0.5, 0.02))
+    expect_equal(q, c(0.02, 1 / 3, 0.02), tolerance = 1e-12)
+})
+
+test_that("only missing q-values are filled for imported results", {
+    a <- mini_annotation()
+    ego <- enrich_go(mini_genes(), a, ont = "BP", verbose = FALSE)
+    res <- ego$result
+    res$qvalue[1] <- NA_real_
+    wrapped <- as_go_enrich(res, a, ont = "BP")
+    expect_false(is.na(wrapped$result$qvalue[1]))
 })

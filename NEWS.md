@@ -1,3 +1,8 @@
+# PruneTopGODAGviz 0.1.7
+
+* Fix q-value monotonic correction for unsorted p-values.
+* Fill only missing q-values when importing result tables.
+* Clarify that the full GO OBO file is not included in the public package.
 # PruneTopGODAGviz 0.1.6
 
 * Finalize q-value calculation for the release source.

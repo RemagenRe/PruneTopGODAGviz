@@ -75,7 +75,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.6/PruneTopGODAGviz_0.1.6.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.7/PruneTopGODAGviz_0.1.7.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -91,7 +91,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.6`。
+应显示 `0.1.7`。
 
 ## Shiny 编辑器
 
@@ -140,7 +140,8 @@ PruneTopGODAGviz::download_go_obo(dest = "D:/GO/go-basic.obo")
 OBO 不可用时，`go_dag()` 使用 `GO.db`，并将所有关系标记为 `is_a`。需要
 `part_of` 关系时使用 OBO 文件。
 
-clean project 包含 `data/go-basic.obo`，启动脚本会把它传给 `run_app()`。
+公开包不包含完整的 `go-basic.obo`。请使用 `download_go_obo()`，或通过
+`obo = ...` 指定本地文件。包内的 `mini.obo` 仅用于示例和测试。
 
 ## 内置数据
 
@@ -240,6 +241,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.6>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.7>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

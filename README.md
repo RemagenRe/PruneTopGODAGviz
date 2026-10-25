@@ -78,7 +78,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.6/PruneTopGODAGviz_0.1.6.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.7/PruneTopGODAGviz_0.1.7.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -94,7 +94,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-The expected version is `0.1.6`.
+The expected version is `0.1.7`.
 
 ## Shiny editor
 
@@ -144,8 +144,9 @@ PruneTopGODAGviz::download_go_obo(dest = "D:/GO/go-basic.obo")
 If the OBO file is unavailable, `go_dag()` uses `GO.db`; this fallback labels
 all relations as `is_a`. Use the OBO file when `part_of` relations are needed.
 
-The clean project includes `data/go-basic.obo`; its launcher passes it to
-`run_app()`.
+The public package does not include the full `go-basic.obo`. Use
+`download_go_obo()` or pass a local file with `obo = ...`. The bundled
+`mini.obo` is only for examples and tests.
 
 ## Built-in data
 
@@ -246,6 +247,6 @@ Package code: MIT. Built-in annotation tables retain their upstream terms; see
 ## Links
 
 - Repository: <https://github.com/RemagenRe/PruneTopGODAGviz>
-- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.6>
+- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.7>
 - Issues: <https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - Chinese README: [README_zh.md](README_zh.md)
