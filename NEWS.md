@@ -1,3 +1,8 @@
+# PruneTopGODAGviz 0.1.3
+
+* Ensure background `future` workers inherit the clean project library path.
+* Keep `getOption("PruneTopGODAGviz.obo")` and uploaded annotation paths
+  visible to the worker.
 # PruneTopGODAGviz 0.1.2
 
 * Enrichment now runs in a background `ExtendedTask`/future worker, so the

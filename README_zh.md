@@ -82,7 +82,7 @@ install.packages(c(
 
 ```r
 install.packages("pak")
-pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.2",
+pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.3",
                  dependencies = TRUE)
 ```
 
@@ -90,7 +90,7 @@ pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.2",
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.2/PruneTopGODAGviz_0.1.2.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.3/PruneTopGODAGviz_0.1.3.tar.gz",
   repos = NULL, type = "source"
 )
 ```
@@ -139,7 +139,7 @@ save_go_dag(dag, "BP_pruned", plot = p, dpi = 800)
 - 软件作者：Yuzhou Liu
 - 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
 - Concept DOI：<https://doi.org/10.5281/zenodo.23587324>
-- v0.1.2 Version DOI：<https://doi.org/10.5281/zenodo.23587325>
+- v0.1.3 Version DOI：<https://doi.org/10.5281/zenodo.23587325>
 
 ```text
 Liu, Yuzhou. (2026). PruneTopGODAGviz (Version 0.1.0)
