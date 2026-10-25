@@ -71,7 +71,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.4/PruneTopGODAGviz_0.1.4.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.5/PruneTopGODAGviz_0.1.5.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -87,7 +87,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.4`。
+应显示 `0.1.5`。
 
 ## Shiny 编辑器
 
@@ -235,6 +235,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.4>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.5>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

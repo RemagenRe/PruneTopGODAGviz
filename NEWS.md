@@ -1,3 +1,10 @@
+# PruneTopGODAGviz 0.1.5
+
+* Calculate `qvalue` in enrichment results instead of returning an all-NA
+  column.
+* Keep `qvalue` populated for imported result tables that contain `pvalue`
+  but no q-value.
+* Added a regression test for q-value completeness.
 # PruneTopGODAGviz 0.1.4
 
 * Enable Shiny forced reconnection for local desktop use, so a backgrounded or
