@@ -45,14 +45,14 @@ install.packages("pak")
 pak::pkg_install("RemagenRe/PruneTopGODAGviz", dependencies = TRUE)
 
 # reproducible release
-pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.3")
+pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.4")
 ```
 
 Or install the release tarball:
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.3/PruneTopGODAGviz_0.1.3.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.4/PruneTopGODAGviz_0.1.4.tar.gz",
   repos = NULL, type = "source"
 )
 ```

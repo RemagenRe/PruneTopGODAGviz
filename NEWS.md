@@ -1,3 +1,8 @@
+# PruneTopGODAGviz 0.1.4
+
+* Enable Shiny forced reconnection for local desktop use, so a backgrounded or
+  temporarily disconnected browser tab recovers instead of remaining on the
+  grey disconnected overlay.
 # PruneTopGODAGviz 0.1.3
 
 * Ensure background `future` workers inherit the clean project library path.

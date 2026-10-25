@@ -1,6 +1,6 @@
 Package: PruneTopGODAGviz
 Title: Publication-Quality Pruned Gene Ontology DAG Visualisation
-Version: 0.1.3
+Version: 0.1.4
 Authors@R:
     person("Yuzhou Liu", email = "remagenre@users.noreply.github.com",
            role = c("aut", "cre"))
