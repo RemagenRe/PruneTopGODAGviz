@@ -11,9 +11,18 @@ export.
 
 ### Dependencies
 
-Installing the tarball with `repos = NULL` installs the hard dependencies but
-does not install all Suggests. Before `run_app()`, install the Shiny/export
-packages explicitly:
+`GO.db` and `AnnotationDbi` are required package dependencies. Install them
+from Bioconductor before installing PruneTopGODAGviz:
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install(c("GO.db", "AnnotationDbi"))
+```
+
+Installing the tarball with `repos = NULL` still does not install all Suggests.
+Before `run_app()`, install the Shiny/export packages explicitly:
 
 ```r
 install.packages(c(
@@ -22,16 +31,11 @@ install.packages(c(
 ))
 ```
 
-For the optional `GO.db` fallback:
-
-```r
-install.packages("BiocManager")
-BiocManager::install(c("GO.db", "AnnotationDbi"))
-```
-
 Minimum for `run_app()`: `shiny`, `visNetwork`, `colourpicker`.
 `ragg`/`svglite` are needed for PNG/SVG export; `ggiraph`/`htmlwidgets` for
-interactive HTML; `GO.db`/`AnnotationDbi` only when an OBO file is unavailable.
+interactive HTML. `GO.db`/`AnnotationDbi` are mandatory dependencies and are
+installed via BiocManager above.
+
 ## Installation
 
 Requires R >= 4.2.
@@ -41,14 +45,14 @@ install.packages("pak")
 pak::pkg_install("RemagenRe/PruneTopGODAGviz", dependencies = TRUE)
 
 # reproducible release
-pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.0")
+pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.1")
 ```
 
 Or install the release tarball:
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.0/PruneTopGODAGviz_0.1.0.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.1/PruneTopGODAGviz_0.1.1.tar.gz",
   repos = NULL, type = "source"
 )
 ```

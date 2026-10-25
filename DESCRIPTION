@@ -1,6 +1,6 @@
 Package: PruneTopGODAGviz
 Title: Publication-Quality Pruned Gene Ontology DAG Visualisation
-Version: 0.1.0
+Version: 0.1.1
 Authors@R:
     person("Yuzhou Liu", email = "remagenre@users.noreply.github.com",
            role = c("aut", "cre"))
@@ -20,6 +20,8 @@ RoxygenNote: 8.0.0
 Depends:
     R (>= 4.2)
 Imports:
+    AnnotationDbi,
+    GO.db,
     data.table,
     ggplot2,
     grDevices,
@@ -31,8 +33,6 @@ Imports:
     tools,
     utils
 Suggests:
-    GO.db,
-    AnnotationDbi,
     ggiraph,
     htmltools,
     htmlwidgets,

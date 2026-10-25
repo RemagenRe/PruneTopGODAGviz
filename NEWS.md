@@ -1,3 +1,10 @@
+# PruneTopGODAGviz 0.1.1
+
+* `GO.db` and `AnnotationDbi` are now mandatory dependencies, installed from
+  Bioconductor.
+* README now documents the exact dependency installation order and the
+  additional Shiny/export packages required by `run_app()`.
+* No functional or statistical changes.
 # PruneTopGODAGviz 0.1.0
 
 * First public release.

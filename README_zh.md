@@ -52,7 +52,17 @@ inst/extdata/DATA_PROVENANCE.md
 
 ### 依赖安装
 
-直接安装 tarball 时，`repos = NULL, type = "source"` 不会自动安装全部
+`GO.db` 和 `AnnotationDbi` 是必须依赖。请先从 Bioconductor 安装，再安装
+PruneTopGODAGviz：
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+}
+BiocManager::install(c("GO.db", "AnnotationDbi"))
+```
+
+直接安装 tarball 时，`repos = NULL, type = "source"` 仍不会自动安装全部
 Suggests。运行 `run_app()` 前请显式安装 Shiny 和导出相关包：
 
 ```r
@@ -63,20 +73,16 @@ install.packages(c(
 ```
 
 `run_app()` 最小依赖是：`shiny`、`visNetwork`、`colourpicker`。
-`ragg`/`svglite` 用于 PNG/SVG 导出；`ggiraph`/`htmlwidgets` 用于交互 HTML；
-`GO.db`/`AnnotationDbi` 仅在没有本地 OBO 时作为回退：
+`ragg`/`svglite` 用于 PNG/SVG 导出；`ggiraph`/`htmlwidgets` 用于交互 HTML。
+`GO.db`/`AnnotationDbi` 是必须依赖，已在上方通过 BiocManager 安装。
 
-```r
-install.packages("BiocManager")
-BiocManager::install(c("GO.db", "AnnotationDbi"))
-```
 ## 安装
 
 要求 R >= 4.2。
 
 ```r
 install.packages("pak")
-pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.0",
+pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.1",
                  dependencies = TRUE)
 ```
 
@@ -84,7 +90,7 @@ pak::pkg_install("RemagenRe/PruneTopGODAGviz@v0.1.0",
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.0/PruneTopGODAGviz_0.1.0.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.1/PruneTopGODAGviz_0.1.1.tar.gz",
   repos = NULL, type = "source"
 )
 ```
@@ -133,7 +139,7 @@ save_go_dag(dag, "BP_pruned", plot = p, dpi = 800)
 - 软件作者：Yuzhou Liu
 - 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
 - Concept DOI：<https://doi.org/10.5281/zenodo.23587324>
-- v0.1.0 Version DOI：<https://doi.org/10.5281/zenodo.23587325>
+- v0.1.1 Version DOI：<https://doi.org/10.5281/zenodo.23587325>
 
 ```text
 Liu, Yuzhou. (2026). PruneTopGODAGviz (Version 0.1.0)
