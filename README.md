@@ -9,6 +9,29 @@ agriGO-style DAG with user-controlled branch pruning, chain collapsing and
 redundant-leaf merging. It also provides a Shiny editor and PDF/PNG/SVG/TIFF
 export.
 
+### Dependencies
+
+Installing the tarball with `repos = NULL` installs the hard dependencies but
+does not install all Suggests. Before `run_app()`, install the Shiny/export
+packages explicitly:
+
+```r
+install.packages(c(
+  "shiny", "visNetwork", "colourpicker",
+  "ragg", "svglite", "ggiraph", "htmlwidgets", "htmltools"
+))
+```
+
+For the optional `GO.db` fallback:
+
+```r
+install.packages("BiocManager")
+BiocManager::install(c("GO.db", "AnnotationDbi"))
+```
+
+Minimum for `run_app()`: `shiny`, `visNetwork`, `colourpicker`.
+`ragg`/`svglite` are needed for PNG/SVG export; `ggiraph`/`htmlwidgets` for
+interactive HTML; `GO.db`/`AnnotationDbi` only when an OBO file is unavailable.
 ## Installation
 
 Requires R >= 4.2.

@@ -50,6 +50,26 @@
 inst/extdata/DATA_PROVENANCE.md
 ```
 
+### 依赖安装
+
+直接安装 tarball 时，`repos = NULL, type = "source"` 不会自动安装全部
+Suggests。运行 `run_app()` 前请显式安装 Shiny 和导出相关包：
+
+```r
+install.packages(c(
+  "shiny", "visNetwork", "colourpicker",
+  "ragg", "svglite", "ggiraph", "htmlwidgets", "htmltools"
+))
+```
+
+`run_app()` 最小依赖是：`shiny`、`visNetwork`、`colourpicker`。
+`ragg`/`svglite` 用于 PNG/SVG 导出；`ggiraph`/`htmlwidgets` 用于交互 HTML；
+`GO.db`/`AnnotationDbi` 仅在没有本地 OBO 时作为回退：
+
+```r
+install.packages("BiocManager")
+BiocManager::install(c("GO.db", "AnnotationDbi"))
+```
 ## 安装
 
 要求 R >= 4.2。
