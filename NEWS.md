@@ -1,3 +1,9 @@
+# PruneTopGODAGviz 0.1.8
+
+* Clarify term deletion: the action removes the selected term and orphaned
+  descendants, while children that remain connected through another parent are
+  kept.
+* Add feedback when no term is selected.
 # PruneTopGODAGviz 0.1.7
 
 * Fix q-value monotonic correction for unsorted p-values.

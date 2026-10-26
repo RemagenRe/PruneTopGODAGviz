@@ -22,7 +22,7 @@ test_that("the app UI is built in English with Arial", {
     }
     expect_true(grepl("PruneTopGODAGviz Studio", html))
     expect_true(grepl("Run Enrichment", html))
-    expect_true(grepl("Delete Term and Descendants", html))
+    expect_true(grepl("Delete Term and Orphaned Descendants", html))
     expect_true(grepl("Enrichment Results (CSV)", html, fixed = TRUE))
     expect_true(grepl("Pruning Decisions (CSV)", html, fixed = TRUE))
     expect_true(grepl("Line Spacing", html, fixed = TRUE))

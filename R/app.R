@@ -108,6 +108,14 @@ run_app <- function(port = NULL, launch.browser = TRUE, obo = NULL, ...) {
     .check_pkg("shiny", "the interactive editor")
     .check_pkg("visNetwork", "the interactive editor")
     .check_pkg("colourpicker", "the colour controls")
+    .check_pkg("future", "background enrichment")
+    .check_pkg("promises", "background enrichment")
+    old_libs <- Sys.getenv("R_LIBS")
+    libs <- unique(c(.libPaths(),
+                     strsplit(old_libs, .Platform$path.sep)[[1]]))
+    Sys.setenv(R_LIBS = paste(libs[nzchar(libs)],
+                              collapse = .Platform$path.sep))
+    future::plan(future::multisession)
     .set_upload_limit()
     if (!is.null(obo)) options(PruneTopGODAGviz.obo = obo)
     if (is.null(getOption("PruneTopGODAGviz.data"))) {
@@ -173,6 +181,18 @@ app_ui <- function() {
                 "    clearTimeout(window.__annoPickerTimer);",
                 "    window.__annoPickerTimer = null;",
                 "  }",
+                "});",
+                "function __ptgTryReconnect() {",
+                "  if (!document.getElementById('shiny-disconnected-overlay')) return;",
+                "  if (window.Shiny && Shiny.shinyapp && !Shiny.shinyapp.isConnected()) {",
+                "    try { Shiny.shinyapp.reconnect(); } catch(e) {}",
+                "  }",
+                "}",
+                "document.addEventListener('visibilitychange', function() {",
+                "  if (!document.hidden) setTimeout(__ptgTryReconnect, 800);",
+                "});",
+                "$(document).on('shiny:disconnected', function() {",
+                "  setTimeout(__ptgTryReconnect, 2500);",
                 "});"
             ))),
         shiny::titlePanel("PruneTopGODAGviz Studio"),
@@ -276,7 +296,8 @@ app_ui <- function() {
                 ),
                 shiny::div(class = "legend-note",
                     "Click to select | double-click to delete a branch | drag to arrange | export on the right",
-                    shiny::textOutput("status", inline = TRUE)
+                    shiny::textOutput("status", inline = TRUE),
+                    shiny::textOutput("task_info", inline = TRUE)
                 ),
                 shiny::div(class = "well",
                     shiny::h5("Download Built-in GO Info"),
@@ -301,7 +322,7 @@ app_ui <- function() {
                     shiny::div(class = "well",
                         shiny::h5("Selected Term"),
                         shiny::div(class = "sel-box", shiny::textOutput("sel_info")),
-                        shiny::actionButton("delete_sel", "Delete Term and Descendants",
+                        shiny::actionButton("delete_sel", "Delete Term and Orphaned Descendants",
                                             class = "btn-danger", width = "100%"),
                         shiny::div(style = "height:4px"),
                         shiny::actionButton("undo_last", "Undo Last Delete",
@@ -357,6 +378,7 @@ app_ui <- function() {
 }
 
 app_server <- function(input, output, session) {
+    session$allowReconnect("force")
     .set_upload_limit()
     rv <- shiny::reactiveValues(
         anno = NULL, ego = NULL, dag = NULL,
@@ -482,82 +504,106 @@ app_server <- function(input, output, session) {
         }
     })
 
+    enrich_job <- function(args) {
+        tryCatch({
+            dag <- PruneTopGODAGviz::go_dag(args$ont, obo = args$obo,
+                                            verbose = FALSE)
+            anno <- PruneTopGODAGviz::read_go_annotation(
+                args$path, keytype = args$keytype, ont = args$ont,
+                verbose = FALSE)
+            check_ids <- utils::getFromNamespace(
+                ".check_id_match", "PruneTopGODAGviz")
+            chk <- check_ids(args$genes, anno$universe[[args$ont]])
+            genes <- chk$ids
+            if (isTRUE(args$propagate)) {
+                anno <- PruneTopGODAGviz::propagate_go_annotation(
+                    anno, dag, ont = args$ont, verbose = FALSE)
+            }
+            ego <- PruneTopGODAGviz::enrich_go(
+                genes, anno, ont = args$ont, pvalueCutoff = 1,
+                qvalueCutoff = 1, pAdjustMethod = "BH",
+                minGSSize = args$min_gs, maxGSSize = args$max_gs,
+                verbose = FALSE)
+            list(ok = TRUE, anno = anno, ego = ego, dag = dag, chk = chk)
+        }, error = function(e) {
+            list(ok = FALSE, error = conditionMessage(e),
+                 id_error = inherits(e, "id_check_error"))
+        })
+    }
+    enrich_task <- shiny::ExtendedTask$new(function(args) {
+        future::future(enrich_job(args), seed = TRUE)
+    })
+    task_done <- shiny::reactiveVal(FALSE)
+
     shiny::observeEvent(input$run, {
         tryCatch({
-            shiny::withProgress(message = "Reading Annotation and Running Enrichment",
-                                value = 0.05, {
-                .check_fdr_breaks(c(input$fdr_blue, input$fdr_white,
-                                     input$fdr_red))
-                dag_run <- go_dag(input$ont, verbose = FALSE)
-                shiny::incProgress(0.15)
-                keytype <- input$keytype
-                shiny::req(input$gene_file)
-                genes <- readLines(input$gene_file$datapath)
-                if (nzchar(input$builtin_anno)) {
-                    anno_name <- switch(input$builtin_anno,
-                        arabidopsis_thaliana = "At_GO_info_panther.csv",
-                        zea_mays = "Maize_GO_info_panther.csv",
-                        oryza_sativa = "Rice_GO_info_panther.csv",
-                        glycine_max = "Soybean_GO_info_panther.csv",
-                        homo_sapiens = "Homo_sapiens_GO_info_panther.csv",
-                        mus_musculus = "Mus_musculus_GO_info_panther.csv",
-                        stop("Unknown built-in annotation: ", input$builtin_anno)
-                    )
-                    path <- .builtin_file(anno_name)
-                    if (!file.exists(path)) {
-                        stop("Built-in annotation not found at ", path)
-                    }
-                } else {
-                    shiny::req(input$anno_file)
-                    path <- input$anno_file$datapath
+            .check_fdr_breaks(c(input$fdr_blue, input$fdr_white,
+                                 input$fdr_red))
+            shiny::req(input$gene_file)
+            genes <- readLines(input$gene_file$datapath)
+            keytype <- input$keytype
+            if (nzchar(input$builtin_anno)) {
+                anno_name <- switch(input$builtin_anno,
+                    arabidopsis_thaliana = "At_GO_info_panther.csv",
+                    zea_mays = "Maize_GO_info_panther.csv",
+                    oryza_sativa = "Rice_GO_info_panther.csv",
+                    glycine_max = "Soybean_GO_info_panther.csv",
+                    homo_sapiens = "Homo_sapiens_GO_info_panther.csv",
+                    mus_musculus = "Mus_musculus_GO_info_panther.csv",
+                    stop("Unknown built-in annotation: ", input$builtin_anno)
+                )
+                path <- .builtin_file(anno_name)
+                if (!file.exists(path)) {
+                    stop("Built-in annotation not found at ", path)
                 }
-                anno <- read_go_annotation(path, keytype = keytype,
-                                           ont = input$ont, verbose = FALSE)
-                chk <- .check_id_match(genes, anno$universe[[input$ont]])
-                genes <- chk$ids
-                shiny::showNotification(
-                    sprintf("ID Check: %d unique IDs, %d matched (%.0f%%)",
-                            chk$n, chk$n_matched, 100 * chk$rate),
-                    type = "message", duration = 3)
-                if (!identical(input$propagate, FALSE)) {
-                    anno <- propagate_go_annotation(anno, dag_run,
-                                                    ont = input$ont,
-                                                    verbose = FALSE)
-                }
-                shiny::incProgress(0.3)
-                ego <- enrich_go(genes, anno, ont = input$ont,
-                                 pvalueCutoff = 1, qvalueCutoff = 1,
-                                 pAdjustMethod = "BH",
-                                 minGSSize = input$min_gs,
-                                 maxGSSize = input$max_gs,
-                                 verbose = FALSE)
-                shiny::incProgress(0.5)
-            })
-            rv$dag <- dag_run
-            rv$anno <- anno
-            rv$ego <- ego
-            rv$drop_roots <- character()
-            rv$positions <- NULL
-            rv$selected <- NULL
-            rv$relayout <- rv$relayout + 1L
+            } else {
+                shiny::req(input$anno_file)
+                path <- input$anno_file$datapath
+            }
+            task_done(FALSE)
+            enrich_task$invoke(list(
+                path = path, genes = genes, keytype = keytype,
+                ont = input$ont, obo = getOption("PruneTopGODAGviz.obo", NULL),
+                propagate = input$propagate, min_gs = input$min_gs,
+                max_gs = input$max_gs))
             shiny::showNotification(
-                sprintf("Enrichment Finished: %d terms tested",
-                        nrow(ego$result)), type = "message")
-        }, error = function(e) {
-            if (inherits(e, "id_check_error")) {
+                "Enrichment is running in the background. You can leave or reload this page; results will be applied when finished.",
+                type = "message", duration = 8)
+        }, error = show_error)
+    })
+
+    shiny::observe({
+        if (!identical(enrich_task$status(), "success") || isTRUE(task_done())) {
+            return()
+        }
+        task_done(TRUE)
+        res <- enrich_task$result()
+        if (!isTRUE(res$ok)) {
+            if (isTRUE(res$id_error)) {
                 shiny::showModal(shiny::modalDialog(
                     title = "ID Check Failed",
                     shiny::HTML(paste0(
-                        e$message, "<br><br>Selected annotation: <b>",
+                        res$error, "<br><br>Selected annotation: <b>",
                         if (nzchar(input$builtin_anno)) input$builtin_anno else "uploaded",
                         "</b><br>ID Type: <b>", input$keytype,
                         "</b><br>Required: at least 10 unique IDs, 10 matches and 20% match rate.")),
                     easyClose = TRUE,
                     footer = shiny::modalButton("Close")))
             } else {
-                show_error(e)
+                show_error(res$error)
             }
-        })
+            return()
+        }
+        rv$dag <- res$dag
+        rv$anno <- res$anno
+        rv$ego <- res$ego
+        rv$drop_roots <- character()
+        rv$positions <- NULL
+        rv$selected <- NULL
+        rv$relayout <- rv$relayout + 1L
+        shiny::showNotification(
+            sprintf("Enrichment Finished: %d terms tested",
+                    nrow(rv$ego$result)), type = "message")
     })
     pruned <- shiny::reactive({
         shiny::req(rv$ego, rv$dag)
@@ -584,11 +630,17 @@ app_server <- function(input, output, session) {
     })
 
     delete_node <- function(id) {
-        if (is.null(id) || !length(id) || is.na(id) || !nzchar(id)) return()
+        if (is.null(id) || !length(id) || is.na(id) || !nzchar(id)) {
+            shiny::showNotification("Select a term first.", type = "message",
+                                    duration = 3)
+            return()
+        }
         d <- pruned()
         if (!id %in% d$nodes$id) return()
         removed <- .cascade_orphans(rv$dag, id)
-        if (all(d$nodes$id[d$nodes$selected] %in% removed)) {
+        selected_displayed <- d$nodes$id[d$nodes$selected]
+        if (!length(selected_displayed) ||
+            all(selected_displayed %in% removed)) {
             shiny::showNotification(
                 "Cannot delete: this would remove every enriched term.",
                 type = "error", duration = 6)
@@ -597,8 +649,14 @@ app_server <- function(input, output, session) {
         rv$drop_roots <- unique(c(rv$drop_roots, id))
         if (isTRUE(input$rearrange)) rv$positions <- NULL
         rv$selected <- NULL
+        n_desc <- length(setdiff(intersect(removed, d$nodes$id), id))
         shiny::showNotification(
-            paste0("Deleted ", id, " and its descendants (undo available)"),
+            if (n_desc > 0L) {
+                sprintf("Deleted %s and %d orphaned descendant(s) (undo available)",
+                        id, n_desc)
+            } else {
+                sprintf("Deleted %s (undo available)", id)
+            },
             type = "warning", duration = 5)
     }
     shiny::observeEvent(input$node_dblclick, {
@@ -700,6 +758,14 @@ app_server <- function(input, output, session) {
                  row$label_l3,
                  if (isTRUE(row$selected)) "Significant Term" else "Ancestor Term")
         paste(txt, collapse = "\n")
+    })
+
+    output$task_info <- shiny::renderText({
+        if (identical(enrich_task$status(), "running")) {
+            " | enrichment running in background"
+        } else {
+            ""
+        }
     })
 
     output$status <- shiny::renderText({
