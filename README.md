@@ -112,10 +112,14 @@ In the editor:
 5. Drag, delete or collapse terms.
 6. Export the figure.
 
+Deleting a term also removes descendants that become orphaned. A child that
+still has another parent remains in the graph. Use **Undo Last Delete** to
+restore the most recent deletion.
+
 ## GO OBO file
 
-The full `go-basic.obo` is downloaded and cached on first use. The lookup order
-is:
+The full `go-basic.obo` is not bundled. It is downloaded and cached on first
+use, or supplied as a local file. The lookup order is:
 
 1. the `obo` argument;
 2. `getOption("PruneTopGODAGviz.obo")`;
@@ -143,10 +147,7 @@ PruneTopGODAGviz::download_go_obo(dest = "D:/GO/go-basic.obo")
 
 If the OBO file is unavailable, `go_dag()` uses `GO.db`; this fallback labels
 all relations as `is_a`. Use the OBO file when `part_of` relations are needed.
-
-The public package does not include the full `go-basic.obo`. Use
-`download_go_obo()` or pass a local file with `obo = ...`. The bundled
-`mini.obo` is only for examples and tests.
+The bundled `mini.obo` is only for examples and tests.
 
 ## Built-in data
 
@@ -228,6 +229,12 @@ Concept DOI:
 
 ```text
 https://doi.org/10.5281/zenodo.23587324
+```
+
+Version DOI for v0.1.8:
+
+```text
+https://doi.org/10.5281/zenodo.23658611
 ```
 
 Citation information is also available in R:

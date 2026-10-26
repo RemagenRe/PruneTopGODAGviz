@@ -109,6 +109,9 @@ PruneTopGODAGviz::run_app()
 5. 拖动、删除或折叠 term；
 6. 导出图片。
 
+删除 term 时会同时删除因此失去父节点的下游 term；如果某个子节点仍有其他父节点，
+它会保留在图中。可以使用 **Undo Last Delete** 恢复最近一次删除。
+
 ## GO OBO 文件
 
 完整的 `go-basic.obo` 会在首次使用时下载并缓存。查找顺序：
@@ -140,8 +143,7 @@ PruneTopGODAGviz::download_go_obo(dest = "D:/GO/go-basic.obo")
 OBO 不可用时，`go_dag()` 使用 `GO.db`，并将所有关系标记为 `is_a`。需要
 `part_of` 关系时使用 OBO 文件。
 
-公开包不包含完整的 `go-basic.obo`。请使用 `download_go_obo()`，或通过
-`obo = ...` 指定本地文件。包内的 `mini.obo` 仅用于示例和测试。
+完整的 `go-basic.obo` 不随包提供；包内的 `mini.obo` 仅用于示例和测试。
 
 ## 内置数据
 
@@ -221,6 +223,12 @@ Concept DOI：
 
 ```text
 https://doi.org/10.5281/zenodo.23587324
+```
+
+v0.1.8 的 Version DOI：
+
+```text
+https://doi.org/10.5281/zenodo.23658611
 ```
 
 在 R 中查看引用信息：
