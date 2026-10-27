@@ -26,6 +26,7 @@ test_that("the app UI is built in English with Arial", {
     expect_true(grepl("Enrichment Results (CSV)", html, fixed = TRUE))
     expect_true(grepl("Pruning Decisions (CSV)", html, fixed = TRUE))
     expect_true(grepl("Line Spacing", html, fixed = TRUE))
+    expect_true(grepl("Show Enrichment Counts", html, fixed = TRUE))
     expect_true(grepl("Or Use a Built-in Annotation", html, fixed = TRUE))
     expect_true(grepl("Download Built-in GO Info", html, fixed = TRUE))
     expect_true(grepl("arabidopsis_thaliana", html, fixed = TRUE))

@@ -20,6 +20,7 @@
 - Shiny 编辑器：拖动节点、删除分支、撤销、重置、调整颜色；
 - 导出 PDF、PNG、SVG 和 TIFF，默认 800 dpi；
 - 生成交互式 HTML 图；
+- 可切换是否显示 `GeneRatio | BgRatio` 富集数值，屏幕和导出图同步生效；
 - 内置六个物种的 PANTHER 注释表和示例数据；
 - 富集在后台运行，长时间计算时界面仍可响应。
 
@@ -75,7 +76,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.8/PruneTopGODAGviz_0.1.8.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.9/PruneTopGODAGviz_0.1.9.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -91,7 +92,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.8`。
+应显示 `0.1.9`。
 
 ## Shiny 编辑器
 
@@ -225,12 +226,6 @@ Concept DOI：
 https://doi.org/10.5281/zenodo.23587324
 ```
 
-v0.1.8 的 Version DOI：
-
-```text
-https://doi.org/10.5281/zenodo.23658611
-```
-
 在 R 中查看引用信息：
 
 ```r
@@ -249,6 +244,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.8>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.9>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

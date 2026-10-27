@@ -1,3 +1,7 @@
+# PruneTopGODAGviz 0.1.9
+
+* Add a dedicated control for showing or hiding the enrichment count line
+  (`GeneRatio | BgRatio`) in the interactive graph and exported figures.
 # PruneTopGODAGviz 0.1.8
 
 * Clarify term deletion: the action removes the selected term and orphaned

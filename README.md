@@ -23,6 +23,7 @@ the enrichment result.
   controls.
 - PDF, PNG, SVG and TIFF export at 800 dpi.
 - Interactive HTML output.
+- Toggle the enrichment count line (`GeneRatio | BgRatio`) on screen and in exports.
 - Compressed PANTHER annotation tables for six species and example data are
   included.
 - Enrichment runs in a background worker, keeping the Shiny interface
@@ -78,7 +79,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.8/PruneTopGODAGviz_0.1.8.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.9/PruneTopGODAGviz_0.1.9.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -94,7 +95,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-The expected version is `0.1.8`.
+The expected version is `0.1.9`.
 
 ## Shiny editor
 
@@ -231,12 +232,6 @@ Concept DOI:
 https://doi.org/10.5281/zenodo.23587324
 ```
 
-Version DOI for v0.1.8:
-
-```text
-https://doi.org/10.5281/zenodo.23658611
-```
-
 Citation information is also available in R:
 
 ```r
@@ -254,6 +249,6 @@ Package code: MIT. Built-in annotation tables retain their upstream terms; see
 ## Links
 
 - Repository: <https://github.com/RemagenRe/PruneTopGODAGviz>
-- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.8>
+- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.9>
 - Issues: <https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - Chinese README: [README_zh.md](README_zh.md)
