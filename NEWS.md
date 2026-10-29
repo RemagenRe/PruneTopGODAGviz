@@ -1,3 +1,8 @@
+# PruneTopGODAGviz 0.1.11
+
+* Show an elapsed-time banner while background enrichment is running, so long
+  jobs do not look like a frozen page.
+* Keep the completed graph and export controls unchanged.
 # PruneTopGODAGviz 0.1.10
 
 * Honour requested export Width/Height exactly and fill the page by adapting

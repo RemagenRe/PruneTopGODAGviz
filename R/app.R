@@ -295,6 +295,7 @@ app_ui <- function() {
                         )
                     )
                 ),
+                shiny::uiOutput("task_banner"),
                 shiny::div(class = "legend-note",
                     "Click to select | double-click to delete a branch | drag to arrange | export on the right",
                     shiny::textOutput("status", inline = TRUE),
@@ -540,6 +541,8 @@ app_server <- function(input, output, session) {
         future::future(enrich_job(args), seed = TRUE)
     })
     task_done <- shiny::reactiveVal(FALSE)
+    task_started <- shiny::reactiveVal(NULL)
+    task_elapsed <- shiny::reactiveVal(0)
 
     shiny::observeEvent(input$run, {
         tryCatch({
@@ -567,6 +570,8 @@ app_server <- function(input, output, session) {
                 path <- input$anno_file$datapath
             }
             task_done(FALSE)
+            task_started(Sys.time())
+            task_elapsed(0)
             enrich_task$invoke(list(
                 path = path, genes = genes, keytype = keytype,
                 ont = input$ont, obo = getOption("PruneTopGODAGviz.obo", NULL),
@@ -582,6 +587,8 @@ app_server <- function(input, output, session) {
             return()
         }
         task_done(TRUE)
+        task_started(NULL)
+        task_elapsed(0)
         res <- enrich_task$result()
         if (!isTRUE(res$ok)) {
             if (isTRUE(res$id_error)) {
@@ -770,9 +777,28 @@ app_server <- function(input, output, session) {
         paste(txt, collapse = "\n")
     })
 
+    shiny::observe({
+        if (identical(enrich_task$status(), "running")) {
+            shiny::invalidateLater(1000)
+            if (!is.null(task_started())) {
+                task_elapsed(as.numeric(difftime(Sys.time(), task_started(),
+                                                 units = "secs")))
+            }
+        }
+    })
+
+    output$task_banner <- shiny::renderUI({
+        if (!identical(enrich_task$status(), "running")) return(NULL)
+        shiny::div(class = "alert alert-info",
+            style = "margin:6px 0 0 0;padding:8px 12px;font-size:13px;",
+            shiny::tags$b("Enrichment running"),
+            sprintf(" - elapsed %.0f s. The graph will appear when the background task finishes.",
+                    task_elapsed()))
+    })
+
     output$task_info <- shiny::renderText({
         if (identical(enrich_task$status(), "running")) {
-            " | enrichment running in background"
+            sprintf(" | enrichment running in background (%.0f s)", task_elapsed())
         } else {
             ""
         }

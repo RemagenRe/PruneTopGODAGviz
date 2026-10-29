@@ -5,7 +5,7 @@ title: "PruneTopGODAGviz: Publication-Quality Pruned Gene Ontology DAG Visualisa
 authors:
   - family-names: "Liu"
     given-names: "Yuzhou"
-version: 0.1.10
+version: 0.1.11
 repository-code: "https://github.com/RemagenRe/PruneTopGODAGviz"
 license: MIT
 doi: 10.5281/zenodo.23587324

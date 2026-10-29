@@ -22,7 +22,7 @@
 - 生成交互式 HTML 图；
 - 可切换是否显示 `GeneRatio | BgRatio` 富集数值，屏幕和导出图同步生效；
 - 内置六个物种的 PANTHER 注释表和示例数据；
-- 富集在后台运行，长时间计算时界面仍可响应。
+- 富集在后台运行，并显示已运行时间；长时间计算时界面仍可响应。
 
 ## 环境要求
 
@@ -76,7 +76,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.10/PruneTopGODAGviz_0.1.10.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.11/PruneTopGODAGviz_0.1.11.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -92,7 +92,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.10`。
+应显示 `0.1.11`。
 
 ## Shiny 编辑器
 
@@ -251,6 +251,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.10>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.11>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)
