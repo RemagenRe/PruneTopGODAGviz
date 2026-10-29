@@ -24,11 +24,11 @@ rendered without text overlap.
 }
 
 \author{
-\strong{Maintainer}: RemagenRe \email{remagenre@users.noreply.github.com}
+\strong{Maintainer}: Yuzhou Liu \email{remagenre@users.noreply.github.com}
 
 Authors:
 \itemize{
-  \item RemagenRe \email{remagenre@users.noreply.github.com}
+  \item Yuzhou Liu \email{remagenre@users.noreply.github.com}
 }
 
 }

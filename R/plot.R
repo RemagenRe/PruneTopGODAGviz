@@ -155,8 +155,10 @@ plot_go_dag <- function(x, layout = NULL, fill = c("#2878B5", "#FFFFFF", "#c8242
     legend_extra <- 0
     if (isTRUE(legend)) {
         u <- fontsize / 72
-        lw <- max(1.90, u * 12)
-        lh <- max(1.15, u * 8)
+        # Keep legend proportions when the whole figure is uniformly rescaled.
+        min_box <- fontsize / 7
+        lw <- max(1.90 * min_box, u * 12)
+        lh <- max(1.15 * min_box, u * 8)
         pos <- .free_legend_rect(layout, lw, lh)
         if (!isTRUE(pos$inside)) {
             yr[2] <- yr[2] + lh + 0.16

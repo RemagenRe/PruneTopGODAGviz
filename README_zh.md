@@ -18,7 +18,7 @@
 - 支持 BP、MF、CC 三个本体；
 - GO DAG 布局、剪枝、单子节点链折叠和相似 term 合并；
 - Shiny 编辑器：拖动节点、删除分支、撤销、重置、调整颜色；
-- 导出 PDF、PNG、SVG 和 TIFF，默认 800 dpi；
+- 导出 PDF、PNG、SVG 和 TIFF，默认 800 dpi，可精确控制页面尺寸；
 - 生成交互式 HTML 图；
 - 可切换是否显示 `GeneRatio | BgRatio` 富集数值，屏幕和导出图同步生效；
 - 内置六个物种的 PANTHER 注释表和示例数据；
@@ -76,7 +76,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.9/PruneTopGODAGviz_0.1.9.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.10/PruneTopGODAGviz_0.1.10.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -92,7 +92,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.9`。
+应显示 `0.1.10`。
 
 ## Shiny 编辑器
 
@@ -210,6 +210,13 @@ plot_go_dag_interactive(pruned, file = "BP_pruned.html")
 
 ## 导出
 
+导出面板支持：
+
+- **Match on-screen layout**：沿用网页的间距和曲线连线（默认开启）；
+- 关闭 **Auto Size** 后，按指定的 Width/Height 精确填满页面；
+- **Include colour legend in the figure**：可选是否在图中保留颜色图例；
+- 导出文件名精确到秒，避免同一分钟内覆盖。
+
 - PDF：矢量图，用于期刊投稿；
 - PNG、TIFF：使用 `ragg`；
 - SVG：使用 `svglite`；
@@ -244,6 +251,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.9>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.10>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

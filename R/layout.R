@@ -360,3 +360,157 @@ print.go_dag_layout <- function(x, ...) {
     cat("  nodes :", nrow(x$nodes), "\n")
     invisible(x)
 }
+#' Rescale a GO DAG layout uniformly
+#'
+#' Multiplies every geometric quantity of a layout (node positions and box sizes,
+#' edge end points and edge routes, the bounding box and the gap parameters) by
+#' `factor`, so a figure can be rendered on a canvas of a different physical size
+#' without changing its proportions. Combine it with `fontsize * factor` in
+#' [plot_go_dag()] for a true uniform scaling of the whole figure.
+#'
+#' @param layout A `go_dag_layout` object.
+#' @param factor Positive numeric scale factor (1 leaves the layout untouched).
+#' @return A rescaled `go_dag_layout` object.
+#' @export
+scale_go_layout <- function(layout, factor) {
+    if (!inherits(layout, "go_dag_layout")) {
+        stop("'layout' must be a go_dag_layout object.", call. = FALSE)
+    }
+    if (!is.numeric(factor) || length(factor) != 1L ||
+        !is.finite(factor) || factor <= 0) {
+        stop("'factor' must be a single positive finite number.", call. = FALSE)
+    }
+    if (abs(factor - 1) < 1e-9) {
+        return(layout)
+    }
+    numeric_cols <- c("x", "y", "xend", "yend", "w", "h", "top", "bot", "yy")
+    route_cols <- c("route", "route_ortho")
+    scale_frame <- function(df) {
+        if (is.null(df) || !length(df) || !nrow(df)) {
+            return(df)
+        }
+        for (nm in intersect(numeric_cols, names(df))) {
+            if (is.numeric(df[[nm]])) {
+                df[[nm]] <- df[[nm]] * factor
+            }
+        }
+        for (nm in intersect(route_cols, names(df))) {
+            df[[nm]] <- lapply(df[[nm]], function(m) {
+                if (is.matrix(m) && is.numeric(m)) m * factor else m
+            })
+        }
+        df
+    }
+    layout$nodes <- scale_frame(layout$nodes)
+    layout$edges <- scale_frame(layout$edges)
+    if (!is.null(layout$segments)) {
+        layout$segments <- scale_frame(layout$segments)
+    }
+    if (!is.null(layout$bbox)) {
+        bbox <- layout$bbox
+        for (nm in intersect(c("xmin", "xmax", "ymin", "ymax", "width", "height"),
+                             names(bbox))) {
+            if (is.numeric(bbox[[nm]])) {
+                bbox[[nm]] <- bbox[[nm]] * factor
+            }
+        }
+        layout$bbox <- bbox
+    }
+    if (!is.null(layout$params)) {
+        for (nm in intersect(c("level_gap", "sibling_gap", "node_pad"),
+                             names(layout$params))) {
+            if (is.numeric(layout$params[[nm]])) {
+                layout$params[[nm]] <- layout$params[[nm]] * factor
+            }
+        }
+    }
+    layout
+}
+
+#' Fit a GO DAG layout to a target page size
+#'
+#' @param dag A `pruned_go_dag` object.
+#' @param width_in,height_in Target page size in inches.
+#' @param fontsize Text size in points.
+#' @param lineheight,family Passed to [layout_go_dag()].
+#' @param level_gap,sibling_gap,node_pad Base spacing in inches.
+#' @param gap_floor Lower bound for the gap multipliers.
+#' @param edge_style Edge routing style passed to [layout_go_dag()].
+#' @param rankdirs Layout directions to try.
+#' @return A list with `layout`, `fontsize`, `margin`, `text_pt`, `shrunk`,
+#'   `gaps`, `rankdir`, `fits` and `size_in`.
+#' @keywords internal
+fit_go_layout_to_page <- function(dag, width_in, height_in, fontsize,
+                                  lineheight = 0.9, family = "Arial",
+                                  level_gap = 0.28, sibling_gap = 0.12,
+                                  node_pad = 0.06, gap_floor = 0.12,
+                                  edge_style = "hybrid",
+                                  rankdirs = c("TB", "LR")) {
+    size_of <- function(lay) plot_go_dag_size(dag, layout = lay)
+    build <- function(fs, bs, mL, mS, rd) {
+        layout_go_dag(dag, rankdir = rd, fontsize = fs, lineheight = lineheight,
+                      family = family, node_pad = node_pad * bs,
+                      level_gap = level_gap * bs * mL,
+                      sibling_gap = sibling_gap * bs * mS,
+                      edge_style = edge_style, verbose = FALSE)
+    }
+    probes <- function(fs, bs, rd) {
+        s11 <- size_of(build(fs, bs, 1, 1, rd))
+        sl <- size_of(build(fs, bs, 2, 1, rd))
+        ss <- size_of(build(fs, bs, 1, 2, rd))
+        list(w0 = s11$width, h0 = s11$height,
+             dWL = sl$width - s11$width, dHL = sl$height - s11$height,
+             dWS = ss$width - s11$width, dHS = ss$height - s11$height)
+    }
+    solve_gaps <- function(pb) {
+        det <- pb$dWL * pb$dHS - pb$dWS * pb$dHL
+        if (!is.finite(det) || abs(det) < 1e-9) {
+            return(c(1, 1))
+        }
+        r1 <- width_in - pb$w0
+        r2 <- height_in - pb$h0
+        c(1 + (r1 * pb$dHS - r2 * pb$dWS) / det,
+          1 + (r2 * pb$dWL - r1 * pb$dHL) / det)
+    }
+    attempt_dir <- function(rd) {
+        fs <- fontsize
+        bs <- 1
+        pb <- probes(fs, bs, rd)
+        k <- min(if (pb$w0 > 0) width_in / pb$w0 else 1,
+                 if (pb$h0 > 0) height_in / pb$h0 else 1)
+        if (is.finite(k) && k < 1) {
+            bs <- k * 0.97
+            fs <- fontsize * bs
+            pb <- probes(fs, bs, rd)
+        }
+        g <- solve_gaps(pb)
+        mL <- max(gap_floor, g[1])
+        mS <- max(gap_floor, g[2])
+        lay <- build(fs, bs, mL, mS, rd)
+        sz <- size_of(lay)
+        fits <- sz$width <= width_in * 1.02 && sz$height <= height_in * 1.02
+        if (!fits) {
+            sc <- min(width_in / sz$width, height_in / sz$height)
+            if (is.finite(sc) && sc > 0) {
+                lay <- scale_go_layout(lay, sc)
+                fs <- fs * sc
+                sz <- size_of(lay)
+                fits <- sz$width <= width_in * 1.02 && sz$height <= height_in * 1.02
+            }
+        }
+        list(layout = lay, fontsize = fs, text_pt = fs, rankdir = rd,
+             gaps = c(level = mL, sibling = mS), fits = isTRUE(fits),
+             size_in = c(width = sz$width, height = sz$height))
+    }
+    best <- NULL
+    for (rd in rankdirs) {
+        cur <- attempt_dir(rd)
+        if (is.null(best) || cur$text_pt > best$text_pt * 1.02 ||
+            (cur$text_pt > best$text_pt * 0.98 && isTRUE(cur$fits) && !isTRUE(best$fits))) {
+            best <- cur
+        }
+    }
+    best$shrunk <- best$text_pt < fontsize - 0.05
+    best$margin <- 0.08
+    best
+}

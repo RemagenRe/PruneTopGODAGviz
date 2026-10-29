@@ -346,6 +346,9 @@ app_ui <- function() {
                         shiny::selectInput("format", "Format",
                             c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg",
                               "TIFF" = "tiff")),
+                        shiny::checkboxInput("match_screen",
+                            "Match on-screen layout (curved edges, screen spacing)",
+                            TRUE),
                         shiny::checkboxInput("auto_size", "Auto Size", TRUE),
                         shiny::conditionalPanel(
                             condition = "input.auto_size == false",
@@ -354,6 +357,8 @@ app_ui <- function() {
                                 shiny::column(6, shiny::numericInput("height", "Height (in)", 8, 2, 100, 0.5))
                             )
                         ),
+                        shiny::checkboxInput("export_legend",
+                            "Include colour legend in the figure", TRUE),
                         shiny::numericInput("dpi", "DPI (PNG/TIFF)", 800, 72, 1200, 50),
                         shiny::downloadButton("download", "Download Current Layout",
                                               class = "btn-primary", style = "width:100%"),
@@ -567,9 +572,8 @@ app_server <- function(input, output, session) {
                 ont = input$ont, obo = getOption("PruneTopGODAGviz.obo", NULL),
                 propagate = input$propagate, min_gs = input$min_gs,
                 max_gs = input$max_gs))
-            shiny::showNotification(
-                "Enrichment is running in the background. You can leave or reload this page; results will be applied when finished.",
-                type = "message", duration = 8)
+            session$sendCustomMessage("portal_enrichment_state",
+                                      list(state = "running"))
         }, error = show_error)
     })
 
@@ -593,6 +597,8 @@ app_server <- function(input, output, session) {
             } else {
                 show_error(res$error)
             }
+            session$sendCustomMessage("portal_enrichment_state",
+                                      list(state = "failed"))
             return()
         }
         rv$dag <- res$dag
@@ -605,6 +611,9 @@ app_server <- function(input, output, session) {
         shiny::showNotification(
             sprintf("Enrichment Finished: %d terms tested",
                     nrow(rv$ego$result)), type = "message")
+        session$sendCustomMessage("portal_enrichment_state",
+                                  list(state = "finished",
+                                       terms = nrow(rv$ego$result)))
     })
     pruned <- shiny::reactive({
         shiny::req(rv$ego, rv$dag)
@@ -812,21 +821,30 @@ app_server <- function(input, output, session) {
 
     output$download <- shiny::downloadHandler(
         filename = function() {
+            # Include seconds so repeated exports in the same minute do not collide.
             paste0("GO_DAG_", input$ont, "_",
-                   format(Sys.time(), "%Y_%m%d_%H%M"), ".", input$format)
+                   format(Sys.time(), "%Y_%m%d_%H%M%S"), ".", input$format)
         },
         content = function(file) {
             d <- pruned()
             pos <- rv$positions
+            # Default export reproduces the on-screen visNetwork figure:
+            # same spacing, line height and cubic-bezier edges.
+            match_screen <- isTRUE(input$match_screen)
+            gap_level <- if (match_screen) 0.10 * input$fontsize else 0.28
+            gap_sibling <- if (match_screen) 0.028 * input$fontsize else 0.12
+            lh_used <- if (match_screen) 1.05 else input$lineheight
+            edge_style <- if (match_screen) "bezier" else "hybrid"
             lay <- if (!is.null(pos) && nrow(pos)) {
                 layout_from_positions(d, pos, fontsize = input$fontsize,
-                                      lineheight = input$lineheight,
+                                      lineheight = lh_used,
                                       family = "Arial", rankdir = "TB",
                                       verbose = FALSE)
             } else {
                 layout_go_dag(d, fontsize = input$fontsize,
-                              lineheight = input$lineheight,
-                              family = "Arial", verbose = FALSE)
+                              lineheight = lh_used, family = "Arial",
+                              level_gap = gap_level, sibling_gap = gap_sibling,
+                              edge_style = edge_style, verbose = FALSE)
             }
             p <- plot_go_dag(
                 d, layout = lay,
@@ -838,22 +856,101 @@ app_server <- function(input, output, session) {
                              unknown = input$col_edge),
                 fdr_breaks = c(input$fdr_blue, input$fdr_white,
                                input$fdr_red),
-                fontsize = input$fontsize, lineheight = input$lineheight,
+                fontsize = input$fontsize, lineheight = lh_used,
                 wrap = input$wrap,
                 show_name = "name" %in% input$show,
                 show_counts = isTRUE(input$show_counts),
                 show_p = "p" %in% input$show,
-                legend = TRUE)
+                legend = isTRUE(input$export_legend))
             sz <- plot_go_dag_size(d, layout = lay)
-            w <- if (isTRUE(input$auto_size)) sz$width else input$width
-            h <- if (isTRUE(input$auto_size)) sz$height else input$height
+            if (isTRUE(input$auto_size)) {
+                w <- sz$width
+                h <- sz$height
+            } else {
+                # Honour the requested page size. When Match is off, adapt the
+                # spacing and only reduce type when the page is genuinely tight;
+                # when Match is on, preserve the panel geometry and scale uniformly.
+                w <- as.numeric(input$width)
+                h <- as.numeric(input$height)
+                rd_use <- "TB"
+                if (is.finite(w) && is.finite(h) && w > 0 && h > 0) {
+                    if (match_screen) {
+                        sz0 <- plot_go_dag_size(d, layout = lay)
+                        fit0 <- min(w / sz0$width, h / sz0$height)
+                        if (!is.finite(fit0) || fit0 <= 0) fit0 <- 1
+                        lay <- scale_go_layout(lay, fit0)
+                        fs_use <- input$fontsize * fit0
+                        margin_use <- 0.08 * fit0
+                        export_note <- sprintf(
+                            paste0("Exported %.1f x %.1f in at %.0f%% of the on-screen layout",
+                                   " (text %.1f pt). The figure matches the panel."),
+                            w, h, 100 * fit0, fs_use)
+                    } else if (is.null(pos) || !nrow(pos)) {
+                        fitted <- fit_go_layout_to_page(
+                            d, width_in = w, height_in = h,
+                            fontsize = input$fontsize,
+                            lineheight = lh_used, family = "Arial",
+                            level_gap = gap_level, sibling_gap = gap_sibling,
+                            edge_style = edge_style)
+                        lay <- fitted$layout
+                        fs_use <- fitted$fontsize
+                        margin_use <- fitted$margin
+                        rd_use <- fitted$rankdir
+                        if (isTRUE(fitted$shrunk)) {
+                            export_note <- sprintf(
+                                paste0("Exported %.1f x %.1f in. The page is tight for %d terms:",
+                                       " type reduced from %.1f to %.1f pt (direction %s). Enlarge Width/Height",
+                                       " or reduce Top Significant Terms to keep the type size."),
+                                w, h, nrow(d$nodes), input$fontsize, fs_use, rd_use)
+                        } else {
+                            export_note <- sprintf(
+                                "Exported %.1f x %.1f in, text %.1f pt, direction %s.",
+                                w, h, fs_use, rd_use)
+                        }
+                    } else {
+                        sz2 <- plot_go_dag_size(d, layout = lay)
+                        fit <- min(w / sz2$width, h / sz2$height)
+                        if (!is.finite(fit) || fit <= 0) fit <- 1
+                        lay <- scale_go_layout(lay, fit)
+                        fs_use <- input$fontsize * fit
+                        margin_use <- 0.08 * fit
+                    }
+                    p <- plot_go_dag(
+                        d, layout = lay,
+                        fill = c(input$col_low, input$col_mid, input$col_high),
+                        ancestor_fill = input$col_ancestor,
+                        bg = input$col_bg, font_family = "Arial",
+                        edge_col = c(is_a = input$col_edge,
+                                     part_of = input$col_partof,
+                                     unknown = input$col_edge),
+                        fdr_breaks = c(input$fdr_blue, input$fdr_white,
+                                       input$fdr_red),
+                        fontsize = fs_use,
+                        margin = margin_use,
+                        rankdir = rd_use,
+                        lineheight = lh_used,
+                        wrap = input$wrap,
+                        show_name = "name" %in% input$show,
+                        show_counts = isTRUE(input$show_counts),
+                        show_p = "p" %in% input$show,
+                        legend = isTRUE(input$export_legend))
+                }
+            }
             prefix <- sub("\\.(pdf|png|svg|tiff)$", "", file)
             save_go_dag(d, prefix = prefix, plot = p, width = w, height = h,
                         dpi = input$dpi, formats = input$format,
                         overwrite = TRUE, bg = input$col_bg)
+            if (!isTRUE(input$auto_size) && exists("fs_use")) {
+                msg <- if (exists("export_note")) {
+                    export_note
+                } else {
+                    sprintf("Exported %.1f x %.1f in, text %.1f pt.",
+                            as.numeric(w), as.numeric(h), fs_use)
+                }
+                shiny::showNotification(msg, type = "message", duration = 12)
+            }
         }
     )
-
     output$download_csv <- shiny::downloadHandler(
         filename = function() {
             paste0("GO_enrichment_", input$ont, "_",

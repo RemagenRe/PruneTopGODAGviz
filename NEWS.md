@@ -1,3 +1,12 @@
+# PruneTopGODAGviz 0.1.10
+
+* Honour requested export Width/Height exactly and fill the page by adapting
+  spacing, without distorting labels.
+* Add `Match on-screen layout` and `Include colour legend in the figure` export
+  switches.
+* Match the interactive panel's cubic-bezier edges and spacing when requested.
+* Replace the running toast with a `portal_enrichment_state` custom message.
+* Include seconds in export filenames and report the resulting page/type size.
 # PruneTopGODAGviz 0.1.9
 
 * Add a dedicated control for showing or hiding the enrichment count line
