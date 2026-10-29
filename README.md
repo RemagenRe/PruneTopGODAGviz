@@ -26,8 +26,8 @@ the enrichment result.
 - Toggle the enrichment count line (`GeneRatio | BgRatio`) on screen and in exports.
 - Compressed PANTHER annotation tables for six species and example data are
   included.
-- Enrichment runs in a background worker, keeping the Shiny interface
-  responsive.
+- Enrichment runs in a background worker with an elapsed-time banner; the
+  Shiny interface stays responsive.
 
 ## Requirements
 
