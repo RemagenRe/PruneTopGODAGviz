@@ -21,6 +21,8 @@
 - 导出 PDF、PNG、SVG 和 TIFF，默认 800 dpi，可精确控制页面尺寸；
 - 生成交互式 HTML 图；
 - 可切换是否显示 `GeneRatio | BgRatio` 富集数值，屏幕和导出图同步生效；
+- 可导入 PANTHER JSON 或通用 CSV/TSV 富集结果，再剪枝和导出（文件上限 50 MB）；
+- 一键按图内现有 term 的 FDR 自动设置颜色条的三个分界值，设置后仍可手动修改。
 - 内置六个物种的 PANTHER 注释表和示例数据；
 - 富集在后台运行，并显示已运行时间；长时间计算时界面仍可响应。
 
@@ -76,7 +78,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.11/PruneTopGODAGviz_0.1.11.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.12/PruneTopGODAGviz_0.1.12.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -92,7 +94,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.11`。
+应显示 `0.1.12`。
 
 ## Shiny 编辑器
 
@@ -112,6 +114,13 @@ PruneTopGODAGviz::run_app()
 
 删除 term 时会同时删除因此失去父节点的下游 term；如果某个子节点仍有其他父节点，
 它会保留在图中。可以使用 **Undo Last Delete** 恢复最近一次删除。
+
+## 导入外部富集结果
+
+编辑器可以导入 PANTHER over-representation JSON，也可以导入包含 ID、p 值/FDR
+和可选计数列的通用 CSV/TSV。外部结果不重新做统计；来源 FDR 同时作为
+`p.adjust` 和 `qvalue`，图中的计数行只显示原始 `Count | BgCount`。导入后可以
+沿用现有的剪枝、编辑和导出流程。上传文件上限为 50 MB，超过的文件在解析前直接拒绝。
 
 ## GO OBO 文件
 
@@ -251,6 +260,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.11>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.12>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

@@ -239,27 +239,42 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
         paste(dag$nodes$name[match(ids, dag$nodes$id)], collapse = "; ")
     }, character(1))
 
-    sets <- split(x$annotation$pairs$transcript, x$annotation$pairs$go_id)
-    set_size <- function(id, pool) {
-        g <- sets[[id]]
-        if (is.null(g)) return(0L)
-        length(intersect(g, pool))
-    }
-    if (counts == "propagated") {
-        for (i in seq_len(nrow(nodes))) {
-            ids <- dag_descendants(dag, nodes$id[i])
-            pool <- unique(unlist(sets[ids], use.names = FALSE))
-            nodes$n_in_term[i] <- length(intersect(pool, x$gene))
-            nodes$n_bg_term[i] <- length(intersect(pool, x$universe))
-        }
+    if (!is.null(x$external_counts)) {
+        ext <- x$external_counts
+        idx <- match(nodes$id, ext$ID)
+        nodes$n_in_term <- ext$n_in_term[idx]
+        nodes$n_bg_term <- ext$n_bg_term[idx]
+        nodes$n_in_universe <- ext$n_in_universe[1]
+        nodes$n_bg_universe <- ext$n_bg_universe[1]
+        ext_label <- ext$count_label[idx]
+        nodes$label_l3 <- ifelse(is.na(ext_label), "", ext_label)
     } else {
-        nodes$n_in_term <- vapply(nodes$id, set_size, integer(1), pool = x$gene)
-        nodes$n_bg_term <- vapply(nodes$id, set_size, integer(1), pool = x$universe)
+        sets <- split(x$annotation$pairs$transcript, x$annotation$pairs$go_id)
+        set_size <- function(id, pool) {
+            g <- sets[[id]]
+            if (is.null(g)) return(0L)
+            length(intersect(g, pool))
+        }
+        if (counts == "propagated") {
+            for (i in seq_len(nrow(nodes))) {
+                ids <- dag_descendants(dag, nodes$id[i])
+                pool <- unique(unlist(sets[ids], use.names = FALSE))
+                nodes$n_in_term[i] <- length(intersect(pool, x$gene))
+                nodes$n_bg_term[i] <- length(intersect(pool, x$universe))
+            }
+        } else {
+            nodes$n_in_term <- vapply(nodes$id, set_size, integer(1), pool = x$gene)
+            nodes$n_bg_term <- vapply(nodes$id, set_size, integer(1), pool = x$universe)
+        }
+        nodes$n_in_universe <- length(x$gene)
+        nodes$n_bg_universe <- length(x$universe)
+        nodes$label_l3 <- paste0(nodes$n_in_term, "/", nodes$n_in_universe,
+                                  " | ", nodes$n_bg_term, "/",
+                                  nodes$n_bg_universe)
     }
-    nodes$n_in_universe <- length(x$gene)
-    nodes$n_bg_universe <- length(x$universe)
     nodes$pvalue <- unname(x$result$pvalue[match(nodes$id, x$result$ID)])
     nodes$p.adjust <- unname(x$result$p.adjust[match(nodes$id, x$result$ID)])
+    nodes$geneID <- unname(x$result$geneID[match(nodes$id, x$result$ID)])
 
     show_stat <- nodes[[stat]]
     nodes$label_l1 <- nodes$id
@@ -270,8 +285,7 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
     nodes$label_l2[add] <- .wrap_label(
         paste0(nodes$name[add], " (+", nodes$n_collapsed[add], " hidden)"),
         width = wrap, max_lines = Inf)
-    nodes$label_l3 <- paste0(nodes$n_in_term, "/", nodes$n_in_universe, " | ",
-                             nodes$n_bg_term, "/", nodes$n_bg_universe)
+
 
     ordered <- match(dag$nodes$id, nodes$id, nomatch = 0L)
     miss <- dag$nodes$id[ordered == 0L]

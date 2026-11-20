@@ -24,6 +24,10 @@ the enrichment result.
 - PDF, PNG, SVG and TIFF export at 800 dpi, with exact page-size control.
 - Interactive HTML output.
 - Toggle the enrichment count line (`GeneRatio | BgRatio`) on screen and in exports.
+- Import PANTHER JSON or a generic CSV/TSV result for pruning and export
+  (files up to 50 MB).
+- Fit the three FDR colour breaks to the terms currently in the graph with one
+  click; the numbers stay editable afterwards.
 - Compressed PANTHER annotation tables for six species and example data are
   included.
 - Enrichment runs in a background worker with an elapsed-time banner; the
@@ -79,7 +83,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.11/PruneTopGODAGviz_0.1.11.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.12/PruneTopGODAGviz_0.1.12.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -95,7 +99,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-The expected version is `0.1.11`.
+The expected version is `0.1.12`.
 
 ## Shiny editor
 
@@ -116,6 +120,15 @@ In the editor:
 Deleting a term also removes descendants that become orphaned. A child that
 still has another parent remains in the graph. Use **Undo Last Delete** to
 restore the most recent deletion.
+
+## Import external enrichment results
+
+The editor can load a PANTHER over-representation JSON file, or a generic
+CSV/TSV with an ID column, p-value/FDR columns, and optional count columns.
+External results are not re-tested. The source FDR is kept as both `p.adjust`
+and `qvalue`, and the graph count line uses the raw `Count | BgCount` values.
+Imported terms enter the same pruning, editing and export workflow. Uploads are
+limited to 50 MB; larger files are rejected before parsing.
 
 ## GO OBO file
 
@@ -256,6 +269,6 @@ Package code: MIT. Built-in annotation tables retain their upstream terms; see
 ## Links
 
 - Repository: <https://github.com/RemagenRe/PruneTopGODAGviz>
-- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.11>
+- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.12>
 - Issues: <https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - Chinese README: [README_zh.md](README_zh.md)

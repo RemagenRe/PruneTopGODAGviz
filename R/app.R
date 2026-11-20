@@ -234,6 +234,19 @@ app_ui <- function() {
                                         style = "width:100%;font-size:15px;padding:9px;background:#2878B5;border-color:#2878B5;")
                 ),
                 shiny::div(class = "well",
+                    shiny::h5("Import External Result"),
+                    shiny::fileInput("external_file",
+                        "PANTHER JSON or CSV/TSV (max 50 MB)",
+                        accept = c(".json", ".csv", ".tsv", ".txt")),
+                    shiny::selectInput("external_ont", "External Ontology",
+                        c("Auto-detect" = "", "BP" = "BP",
+                          "MF" = "MF", "CC" = "CC")),
+                    shiny::actionButton("import_external",
+                        "Load External Enrichment Result",
+                        class = "btn-default", width = "100%"),
+                    shiny::div(class = "legend-note", shiny::textOutput("external_status"))
+                ),
+                shiny::div(class = "well",
                     shiny::h5("Display and Pruning"),
                     shiny::fluidRow(
                         shiny::column(6, shiny::numericInput("top_n", "Top Significant Terms", 5, 1, 200, 1)),
@@ -264,7 +277,8 @@ app_ui <- function() {
                 shiny::div(class = "well",
                     shiny::h5("Colours"),
                     shiny::selectInput("preset", "Preset",
-                        c("White-gold-rose (default)" = "warm", "Blue-white-red" = "bwr",
+                        c("White-gold-rose (default)" = "warm",
+                          "Blue-white-red" = "bwr",
                           "AgriGO Style" = "agrigo", "Blue-Teal" = "teal",
                           "Custom" = "custom"), selected = "warm"),
                     shiny::fluidRow(
@@ -333,13 +347,21 @@ app_ui <- function() {
                     shiny::div(class = "well",
                         shiny::h5("FDR Colour Scale"),
                         shiny::fluidRow(
-                            shiny::column(4, shiny::numericInput(
-                                "fdr_blue", "Blue", 0.05, 1e-6, 1, 0.001)),
-                            shiny::column(4, shiny::numericInput(
-                                "fdr_white", "White", 0.01, 1e-6, 1, 0.001)),
-                            shiny::column(4, shiny::numericInput(
-                                "fdr_red", "Red", 0.0001, 1e-8, 1, 0.0001))
+                            shiny::column(4, shiny::textInput(
+                                "fdr_blue", "Blue", "0.05")),
+                            shiny::column(4, shiny::textInput(
+                                "fdr_white", "White", "0.01")),
+                            shiny::column(4, shiny::textInput(
+                                "fdr_red", "Red", "0.0001"))
                         ),
+                        shiny::div(style = "height:4px"),
+                        shiny::actionButton("fdr_auto",
+                            "Auto Set from Current Terms",
+                            class = "btn-default", width = "100%"),
+                        shiny::div(class = "legend-note",
+                            "Fits the three breaks to the distribution of the coloured terms; the values stay editable and the palette is not touched, so Preset can still be switched afterwards."),
+                        shiny::div(class = "legend-note",
+                            shiny::textOutput("fdr_auto_note")),
                         shiny::uiOutput("legend")
                     ),
                     shiny::div(class = "well",
@@ -390,7 +412,7 @@ app_server <- function(input, output, session) {
     rv <- shiny::reactiveValues(
         anno = NULL, ego = NULL, dag = NULL,
         drop_roots = character(), positions = NULL, selected = NULL,
-        relayout = 0L
+        relayout = 0L, external_source = NULL
     )
 
     output$has_data <- shiny::reactive(!is.null(rv$ego))
@@ -399,6 +421,16 @@ app_server <- function(input, output, session) {
     show_error <- function(e) {
         shiny::showNotification(conditionMessage(e), type = "error", duration = 12)
     }
+
+    # The three FDR breaks are typed as text so scientific notation such as
+    # 1e-68 stays readable. Invalid text falls back to the documented defaults.
+    fdr_ok <- shiny::reactive({
+        .fdr_breaks_ok(c(input$fdr_blue, input$fdr_white, input$fdr_red))
+    })
+    fdr_breaks <- shiny::reactive({
+        .fdr_breaks_from_text(c(input$fdr_blue, input$fdr_white,
+                                input$fdr_red))
+    })
 
     show_anno_example <- function() {
         shiny::showModal(shiny::modalDialog(
@@ -504,6 +536,37 @@ app_server <- function(input, output, session) {
         }, error = show_error)
     }
     shiny::observeEvent(input$load_example, load_example_data())
+    shiny::observeEvent(input$import_external, {
+        tryCatch({
+            shiny::req(input$external_file)
+            if (isTRUE(input$external_file$size > .max_external_bytes)) {
+                stop(sprintf(
+                    "External result file is %.1f MB; the limit is 50 MB.",
+                    input$external_file$size / 1024^2), call. = FALSE)
+            }
+            ont <- if (nzchar(input$external_ont)) input$external_ont else NULL
+            ext <- import_go_enrich(
+                input$external_file$datapath,
+                ontology = ont,
+                obo = getOption("PruneTopGODAGviz.obo", NULL),
+                verbose = FALSE)
+            rv$anno <- NULL
+            rv$ego <- ext
+            rv$dag <- go_dag(ext$ontology,
+                             obo = getOption("PruneTopGODAGviz.obo", NULL),
+                             verbose = FALSE)
+            rv$drop_roots <- character()
+            rv$positions <- NULL
+            rv$selected <- NULL
+            rv$external_source <- ext$params$source
+            shiny::updateSelectInput(session, "ont", selected = ext$ontology)
+            rv$relayout <- rv$relayout + 1L
+            shiny::showNotification(
+                sprintf("Imported %d external terms from %s",
+                        nrow(ext$result), ext$params$source),
+                type = "message")
+        }, error = show_error)
+    })
     shiny::observe({
         query <- shiny::parseQueryString(session$clientData$url_search)
         if (identical(query$demo, "1") && is.null(rv$ego)) {
@@ -546,8 +609,6 @@ app_server <- function(input, output, session) {
 
     shiny::observeEvent(input$run, {
         tryCatch({
-            .check_fdr_breaks(c(input$fdr_blue, input$fdr_white,
-                                 input$fdr_red))
             shiny::req(input$gene_file)
             genes <- readLines(input$gene_file$datapath)
             keytype <- input$keytype
@@ -614,6 +675,7 @@ app_server <- function(input, output, session) {
         rv$drop_roots <- character()
         rv$positions <- NULL
         rv$selected <- NULL
+        rv$external_source <- NULL
         rv$relayout <- rv$relayout + 1L
         shiny::showNotification(
             sprintf("Enrichment Finished: %d terms tested",
@@ -638,6 +700,49 @@ app_server <- function(input, output, session) {
                 stop(e)
             }
         })
+    })
+
+    auto_stamp <- shiny::reactiveVal(NULL)
+
+    # Values that drive the colour scale: the coloured (selected) terms only,
+    # because ancestors keep their own fill.
+    .fdr_scale_values <- function(d) {
+        p <- d$nodes$p.adjust[d$nodes$selected]
+        p[is.finite(p) & p > 0]
+    }
+
+    output$fdr_auto_note <- shiny::renderText({
+        s <- auto_stamp()
+        if (is.null(s) || is.null(rv$ego)) return("")
+        d <- tryCatch(pruned(), error = function(e) NULL)
+        if (is.null(d)) return("")
+        p <- .fdr_scale_values(d)
+        if (!length(p)) return("")
+        now <- c(n = length(p), lo = log10(min(p)), hi = log10(max(p)))
+        if (isTRUE(all.equal(unname(now), unname(s)))) return("")
+        "Terms changed since the last auto fit; press Auto Set again to refit."
+    })
+
+    shiny::observeEvent(input$fdr_auto, {
+        if (is.null(rv$ego)) return()
+        tryCatch({
+            d <- pruned()
+            p <- .fdr_scale_values(d)
+            br <- .auto_fdr_breaks(p)
+            auto_stamp(c(n = length(p), lo = log10(min(p)),
+                         hi = log10(max(p))))
+            shiny::updateTextInput(session, "fdr_blue",
+                                   value = .fmt_break(br[["blue"]]))
+            shiny::updateTextInput(session, "fdr_white",
+                                   value = .fmt_break(br[["white"]]))
+            shiny::updateTextInput(session, "fdr_red",
+                                   value = .fmt_break(br[["red"]]))
+            shiny::showNotification(
+                sprintf("FDR colour scale set to %s / %s / %s",
+                        .fmt_break(br[["blue"]]), .fmt_break(br[["white"]]),
+                        .fmt_break(br[["red"]])),
+                type = "message", duration = 4)
+        }, error = show_error)
     })
 
     shiny::observeEvent(input$node_click, {
@@ -748,8 +853,7 @@ app_server <- function(input, output, session) {
                           high = input$col_high, ancestor = input$col_ancestor,
                           border = input$col_border, edge = input$col_edge,
                           part_of = input$col_partof, bg = input$col_bg,
-                          fdr_breaks = c(input$fdr_blue, input$fdr_white,
-                                         input$fdr_red))
+                          fdr_breaks = fdr_breaks())
         )
     })
 
@@ -796,6 +900,19 @@ app_server <- function(input, output, session) {
                     task_elapsed()))
     })
 
+    output$external_status <- shiny::renderText({
+        if (is.null(rv$ego) || is.null(rv$ego$external_counts)) return("")
+        src <- rv$ego$params$adjusted_source %||% "source FDR"
+        note <- if (identical(src, "source FDR")) {
+            "p.adjust is the source FDR"
+        } else {
+            "no FDR column; p.adjust is the raw p-value"
+        }
+        sprintf("Imported: %s, %d terms; %s.",
+                rv$external_source %||% "external result",
+                nrow(rv$ego$result), note)
+    })
+
     output$task_info <- shiny::renderText({
         if (identical(enrich_task$status(), "running")) {
             sprintf(" | enrichment running in background (%.0f s)", task_elapsed())
@@ -814,11 +931,13 @@ app_server <- function(input, output, session) {
     })
 
     output$legend <- shiny::renderUI({
-        fdr_labels <- tryCatch(
-            .fmt_break(.check_fdr_breaks(c(input$fdr_blue, input$fdr_white,
-                                           input$fdr_red))),
-            error = function(e) c("0.05", "0.01", "0.0001"))
+        fdr_labels <- .fmt_break(fdr_breaks())
         shiny::tagList(
+            if (!isTRUE(fdr_ok())) {
+                shiny::div(class = "legend-note",
+                    style = "color:#b23b3b;",
+                    "Invalid FDR values; using 0.05 / 0.01 / 0.0001.")
+            },
             shiny::div(style = sprintf(
                 "height:12px;border-radius:3px;border:1px solid #d9dde3;background:linear-gradient(to right,%s,%s,%s);",
                 input$col_low, input$col_mid, input$col_high)),
@@ -880,8 +999,7 @@ app_server <- function(input, output, session) {
                 edge_col = c(is_a = input$col_edge,
                              part_of = input$col_partof,
                              unknown = input$col_edge),
-                fdr_breaks = c(input$fdr_blue, input$fdr_white,
-                               input$fdr_red),
+                fdr_breaks = fdr_breaks(),
                 fontsize = input$fontsize, lineheight = lh_used,
                 wrap = input$wrap,
                 show_name = "name" %in% input$show,
@@ -949,8 +1067,7 @@ app_server <- function(input, output, session) {
                         edge_col = c(is_a = input$col_edge,
                                      part_of = input$col_partof,
                                      unknown = input$col_edge),
-                        fdr_breaks = c(input$fdr_blue, input$fdr_white,
-                                       input$fdr_red),
+                        fdr_breaks = fdr_breaks(),
                         fontsize = fs_use,
                         margin = margin_use,
                         rankdir = rd_use,
@@ -1130,10 +1247,17 @@ app_server <- function(input, output, session) {
 }
 
 .vis_tooltips <- function(d) {
-    sets <- split(d$annotation$pairs$transcript, d$annotation$pairs$go_id)
-    genes <- lapply(d$nodes$id, function(id) {
-        intersect(sets[[id]] %||% character(), d$gene)
-    })
+    if (is.null(d$annotation)) {
+        genes <- lapply(d$nodes$geneID %||% rep("", nrow(d$nodes)), function(g) {
+            if (is.na(g) || !nzchar(g)) return(character())
+            strsplit(g, "/", fixed = TRUE)[[1]]
+        })
+    } else {
+        sets <- split(d$annotation$pairs$transcript, d$annotation$pairs$go_id)
+        genes <- lapply(d$nodes$id, function(id) {
+            intersect(sets[[id]] %||% character(), d$gene)
+        })
+    }
     vapply(seq_len(nrow(d$nodes)), function(i) {
         g <- genes[[i]]
         shown <- utils::head(g, 12)

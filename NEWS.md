@@ -1,3 +1,14 @@
+# PruneTopGODAGviz 0.1.12
+
+* Import PANTHER over-representation JSON into the Shiny editor and reuse the
+  existing pruning and export workflow.
+* Add a generic CSV/TSV result interface.
+* Use source p-values/FDR and raw `Count | BgCount`; do not recompute or infer
+  ratios for imported results.
+* Limit imported result files to 50 MB; larger files are rejected before parsing.
+* Add an **Auto Set from Current Terms** button that fits the three FDR colour
+  breaks to the terms currently in the graph. Defaults stay 0.05 / 0.01 /
+  0.0001 until it is pressed, and the values remain editable afterwards.
 # PruneTopGODAGviz 0.1.11
 
 * Show an elapsed-time banner while background enrichment is running, so long

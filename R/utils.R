@@ -36,8 +36,28 @@
     x
 }
 
+# Validate the three FDR breaks typed into the text inputs.
+#
+# Accepts scientific notation ("1e-68"). Returns TRUE only for three positive,
+# finite values in strictly decreasing order.
+.fdr_breaks_ok <- function(x) {
+    v <- suppressWarnings(as.numeric(x))
+    length(v) == 3L && !anyNA(v) && all(is.finite(v)) && all(v > 0) &&
+        v[1] > v[2] && v[2] > v[3]
+}
+
+# Coerce typed FDR breaks to a usable triple, falling back to the defaults.
+.fdr_breaks_from_text <- function(x, default = c(0.05, 0.01, 0.0001)) {
+    if (.fdr_breaks_ok(x)) as.numeric(x) else default
+}
 .fmt_break <- function(x) {
-    format(as.numeric(x), scientific = FALSE, trim = TRUE, drop0trailing = TRUE)
+    x <- as.numeric(x)
+    out <- ifelse(is.na(x), NA_character_,
+                  ifelse(x < 1e-4,
+                         formatC(x, format = "e", digits = 1),
+                         format(x, scientific = FALSE, trim = TRUE,
+                                drop0trailing = TRUE)))
+    trimws(out)
 }
 
 .fdr_position <- function(p, at_blue = 0.05, at_white = 0.01,
@@ -54,6 +74,58 @@
     pmin(pmax(t, 0), 1)
 }
 
+# Choose three FDR colour breaks from the values currently shown.
+#
+# The three breaks are the blue (least significant), white (middle) and red
+# (most significant) ends of the colour scale. They follow the distribution of
+# `p`, not just its extremes: with five or more values the 90th, 50th and 10th
+# percentiles of log10(p) are used, so the bulk of the coloured terms spreads
+# over the whole gradient instead of piling up at one end. Fewer values fall
+# back to the observed range. A range narrower than one decade is widened
+# around the middle, neighbours are kept at least 0.3 decades apart, and the
+# result is strictly decreasing, which is what [.check_fdr_breaks()] requires.
+.auto_fdr_breaks <- function(p, min_value = 1e-300, max_value = 1) {
+    p <- suppressWarnings(as.numeric(p))
+    p <- p[is.finite(p) & p > 0]
+    if (!length(p)) {
+        stop("No FDR values to fit: the terms currently in the graph have no p.adjust.",
+             call. = FALSE)
+    }
+    # Adjusted p-values above 1 are invalid; cap them so the log10 scale stays ordered.
+    p <- pmin(p, 1)
+    logs <- log10(p)
+    if (length(logs) >= 5L) {
+        q <- as.numeric(stats::quantile(logs, probs = c(0.9, 0.5, 0.1),
+                                        names = FALSE, type = 7))
+        hi <- q[1]
+        mid <- q[2]
+        lo <- q[3]
+    } else {
+        hi <- max(logs)
+        lo <- min(logs)
+        mid <- (hi + lo) / 2
+    }
+    gap <- 0.3
+    if (!is.finite(hi) || !is.finite(lo) || !is.finite(mid) ||
+        (hi - lo) < 1) {
+        centre <- if (is.finite(mid)) mid else 0
+        hi <- centre + 0.5
+        lo <- centre - 0.5
+    }
+    if (hi - mid < gap) hi <- mid + gap
+    if (mid - lo < gap) lo <- mid - gap
+    hi <- min(hi, log10(max_value))
+    lo <- max(lo, log10(min_value))
+    if (hi - lo < 2 * gap) {
+        mid <- (hi + lo) / 2
+    }
+    vals <- 10^c(blue = hi, white = mid, red = lo)
+    rounded <- signif(vals, 2)
+    if (rounded[[1]] > rounded[[2]] && rounded[[2]] > rounded[[3]]) {
+        vals <- rounded
+    }
+    pmin(pmax(vals, min_value), max_value)
+}
 .wrap_label <- function(x, width = 30, max_lines = 2L) {
     vapply(x, function(s) {
         if (is.na(s) || !nzchar(s)) return("")
