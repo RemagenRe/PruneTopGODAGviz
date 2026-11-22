@@ -139,9 +139,10 @@ app_ui <- function() {
     avail <- .builtin_available()
     shiny::fluidPage(
         shiny::tags$head(shiny::tags$style(shiny::HTML(
-            "body{background:#f4f5f7;font-family:Arial, Helvetica, sans-serif;}
+            "body{background:#f4f5f7;font-family:\"Liberation Sans\",\"DejaVu Sans\",\"Noto Sans\",sans-serif;}
              .well{padding:10px 12px;margin-bottom:10px;background:#fff;border:1px solid #e2e4e8;border-radius:6px;}
              .well h5{margin:2px 0 8px 0;font-weight:600;color:#2c3e50;font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+             .well h5.step-title{margin:4px 0 10px 0;font-size:16px;font-weight:600;color:#1d5fa8;text-transform:none;letter-spacing:0;}
              .form-group{margin-bottom:7px;}
              .control-label{font-size:12px;margin-bottom:2px;color:#333;}
              .form-control,input[type=number]{height:30px;padding:2px 8px;font-size:12px;}
@@ -154,34 +155,16 @@ app_ui <- function() {
              .shiny-input-container .progress{height:0;margin-bottom:0;overflow:hidden;}
              .cbox{margin-top:2px;margin-bottom:2px;font-size:12px;}
              .cbox label{font-size:12px;}
+             .modal-body{max-height:calc(100vh - 190px);overflow-y:auto;}
+             .modal-body img{max-width:100%;max-height:38vh;height:auto;display:block;margin:0 auto;}
              h2{font-size:20px;margin:8px 0 10px 0;font-weight:600;color:#1f2d3d;}
              .right-panel{position:sticky;top:10px;}
              .sel-box{font-size:12px;color:#333;background:#fafbfc;border:1px solid #e2e4e8;border-radius:4px;padding:6px;min-height:58px;white-space:pre-wrap;}
              .status{font-size:12px;color:#56606b;white-space:pre-wrap;}
              .colourpicker-input{height:30px !important;font-size:12px;}
-             .anno-file-input{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
+             .anno-file-input,.gene-file-input{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
             ")),
             shiny::tags$script(shiny::HTML(
-                "Shiny.addCustomMessageHandler('anno_picker_delay', function(msg) {",
-                "  if (window.__annoPickerTimer) clearTimeout(window.__annoPickerTimer);",
-                "  window.__annoPickerTimer = setTimeout(function() {",
-                "    window.__annoPickerTimer = null;",
-                "    var el = document.getElementById('anno_file');",
-                "    if (el) el.click();",
-                "  }, (msg && msg.delay) ? msg.delay : 6000);",
-                "});",
-                "$(document).on('change', '#anno_file', function() {",
-                "  if (window.__annoPickerTimer) {",
-                "    clearTimeout(window.__annoPickerTimer);",
-                "    window.__annoPickerTimer = null;",
-                "  }",
-                "});",
-                "$(document).on('hidden.bs.modal', '.modal', function() {",
-                "  if (window.__annoPickerTimer) {",
-                "    clearTimeout(window.__annoPickerTimer);",
-                "    window.__annoPickerTimer = null;",
-                "  }",
-                "});",
                 "function __ptgTryReconnect() {",
                 "  if (!document.getElementById('shiny-disconnected-overlay')) return;",
                 "  if (window.Shiny && Shiny.shinyapp && !Shiny.shinyapp.isConnected()) {",
@@ -198,10 +181,18 @@ app_ui <- function() {
         shiny::titlePanel("PruneTopGODAGviz Studio"),
         shiny::fluidRow(
             shiny::column(3,
+                shiny::div(class = "well", style = "padding:8px 10px;",
+                    shiny::div(style = "display:flex;gap:8px;",
+                        shiny::actionButton("load_example", "Load Example",
+                                            class = "btn-default",
+                                            style = "flex:1;"),
+                        shiny::actionButton("clear_all", "Clear / Start Over",
+                                            class = "btn-warning",
+                                            style = "flex:1;")
+                    )
+                ),
                 shiny::div(class = "well",
-                    shiny::h5("Data"),
-                    shiny::actionButton("load_example", "Load Example Data",
-                                        class = "btn-default", width = "100%"),
+                    shiny::h5(class = "step-title", "\u2460 Upload My Own GO Annotations"),
                     shiny::div(class = "anno-file-input",
                         shiny::fileInput("anno_file", "GO Annotation File",
                                          accept = c(".csv", ".tsv", ".txt"))),
@@ -213,9 +204,15 @@ app_ui <- function() {
                         c("None (Upload My Own)" = "",
                           stats::setNames(avail, avail))),
                     if (!length(avail)) shiny::div(class = "legend-note",
-                        "Built-in annotation data directory not found; upload an annotation file or set PruneTopGODAGviz.data."),
-                    shiny::fileInput("gene_file", "Gene / Transcript List",
-                                     accept = c(".txt", ".csv", ".tsv")),
+                        "Built-in annotation data directory not found; upload an annotation file or set PruneTopGODAGviz.data.")
+                ),
+                shiny::div(class = "well",
+                    shiny::h5(class = "step-title", "\u2461 Upload Gene / Transcript List File"),
+                    shiny::div(class = "gene-file-input",
+                        shiny::fileInput("gene_file", "Gene / Transcript List",
+                                         accept = c(".txt", ".csv", ".tsv"))),
+                    shiny::actionButton("browse_gene", "Browse...", width = "100%"),
+                    shiny::div(class = "legend-note", shiny::textOutput("gene_file_name")),
                     shiny::div(class = "legend-note",
                         "One ID per line. IDs are deduplicated and sorted; at least 10 IDs, 10 matches and 20% match rate are required."),
                     shiny::checkboxInput("propagate",
@@ -229,12 +226,12 @@ app_ui <- function() {
                         shiny::column(6, shiny::numericInput("min_gs", "MinGSSize", 10, 1, 1000, 1)),
                         shiny::column(6, shiny::numericInput("max_gs", "MaxGSSize", 5000, 10, 50000, 10))
                     ),
-                    shiny::actionButton("run", "Run Enrichment",
+                    shiny::actionButton("run", "\u2462 Run Enrichment",
                                         class = "btn-primary btn-lg",
-                                        style = "width:100%;font-size:15px;padding:9px;background:#2878B5;border-color:#2878B5;")
+                                        style = "width:100%;font-size:16px;padding:9px;background:#2878B5;border-color:#2878B5;")
                 ),
                 shiny::div(class = "well",
-                    shiny::h5("Import External Result"),
+                    shiny::h5("Or You Can Import External Result"),
                     shiny::fileInput("external_file",
                         "PANTHER JSON or CSV/TSV (max 50 MB)",
                         accept = c(".json", ".csv", ".tsv", ".txt")),
@@ -365,7 +362,7 @@ app_ui <- function() {
                         shiny::uiOutput("legend")
                     ),
                     shiny::div(class = "well",
-                        shiny::h5("Export Figure"),
+                        shiny::h5(class = "step-title", "\u2463 Export Figure"),
                         shiny::selectInput("format", "Format",
                             c("PDF" = "pdf", "PNG" = "png", "SVG" = "svg",
                               "TIFF" = "tiff")),
@@ -389,7 +386,7 @@ app_ui <- function() {
                             "The current arrangement is exported. A small collision-relaxation step prevents text overlap.")
                     ),
                     shiny::div(class = "well",
-                        shiny::h5("Export Tables"),
+                        shiny::h5(class = "step-title", "\u2464 Export Tables"),
                         shiny::downloadButton("download_csv",
                             "Enrichment Results (CSV)", style = "width:100%"),
                         shiny::div(style = "height:4px"),
@@ -412,7 +409,7 @@ app_server <- function(input, output, session) {
     rv <- shiny::reactiveValues(
         anno = NULL, ego = NULL, dag = NULL,
         drop_roots = character(), positions = NULL, selected = NULL,
-        relayout = 0L, external_source = NULL
+        relayout = 0L, external_source = NULL, stat = "p.adjust"
     )
 
     output$has_data <- shiny::reactive(!is.null(rv$ego))
@@ -443,13 +440,12 @@ app_server <- function(input, output, session) {
                 shiny::tags$button(
                     "Choose File", type = "button",
                     class = "btn btn-primary",
-                    onclick = "if(window.__annoPickerTimer){clearTimeout(window.__annoPickerTimer);window.__annoPickerTimer=null;} document.getElementById('anno_file').click();")
+                    onclick = "document.getElementById('anno_file').click();")
             )
         ))
     }
     shiny::observeEvent(input$browse_anno, {
         show_anno_example()
-        session$sendCustomMessage("anno_picker_delay", list(delay = 6000))
     }, ignoreInit = TRUE)
     shiny::observeEvent(input$cancel_browse, shiny::removeModal(),
                         ignoreInit = TRUE)
@@ -460,6 +456,39 @@ app_server <- function(input, output, session) {
         sprintf("%s (%.1f MB)", input$anno_file$name,
                 input$anno_file$size / 1024^2)
     })
+
+    show_gene_example <- function() {
+        shiny::showModal(shiny::modalDialog(
+            title = "Gene / Transcript List Example",
+            shiny::tags$img(src = "appwww/id_example.png",
+                            style = "max-width:100%;height:auto;"),
+            shiny::div(class = "legend-note",
+                "One identifier per line in a plain-text file (.txt, .csv or .tsv). ",
+                "Blank lines and duplicates are ignored. At least 10 IDs, ",
+                "10 matching IDs and a 20% match rate are required."),
+            easyClose = TRUE,
+            footer = shiny::tagList(
+                shiny::actionButton("cancel_gene_browse", "Cancel"),
+                shiny::tags$button(
+                    "Choose File", type = "button",
+                    class = "btn btn-primary",
+                    onclick = "document.getElementById('gene_file').click();")
+            )
+        ))
+    }
+    shiny::observeEvent(input$browse_gene, {
+        show_gene_example()
+    }, ignoreInit = TRUE)
+    shiny::observeEvent(input$cancel_gene_browse, shiny::removeModal(),
+                        ignoreInit = TRUE)
+    shiny::observeEvent(input$gene_file, shiny::removeModal(),
+                        ignoreInit = TRUE)
+    output$gene_file_name <- shiny::renderText({
+        if (is.null(input$gene_file)) return("No File Selected")
+        sprintf("%s (%.1f KB)", input$gene_file$name,
+                input$gene_file$size / 1024)
+    })
+    shiny::observeEvent(input$clear_all, session$reload(), ignoreInit = TRUE)
 
     load_example_data <- function() {
         tryCatch({
@@ -522,6 +551,7 @@ app_server <- function(input, output, session) {
             rv$anno <- res$anno
             rv$ego <- res$ego
             rv$dag <- res$dag
+            rv$stat <- "p.adjust"
             rv$drop_roots <- character()
             rv$positions <- NULL
             rv$selected <- NULL
@@ -530,6 +560,16 @@ app_server <- function(input, output, session) {
             shiny::updateCheckboxInput(session, "physics", value = FALSE)
             shiny::updateSelectInput(session, "keytype", selected = "gene")
             shiny::updateSelectInput(session, "ont", selected = "BP")
+            tryCatch({
+                d0 <- suppressWarnings(prune_go_dag(
+                    res$ego, dag = res$dag, top_n = res$top,
+                    p_cutoff = input$p_cutoff,
+                    collapse_chains = isTRUE(input$collapse),
+                    max_nodes = 300, wrap = input$wrap,
+                    counts = if (isTRUE(input$propagate)) "propagated" else "direct",
+                    verbose = FALSE))
+                fit_fdr_scale(d0)
+            }, error = function(e) NULL)
             shiny::showNotification(
                 sprintf("Example Data Loaded: %d genes", length(res$genes)),
                 type = "message")
@@ -559,6 +599,7 @@ app_server <- function(input, output, session) {
             rv$positions <- NULL
             rv$selected <- NULL
             rv$external_source <- ext$params$source
+            rv$stat <- ext$params$stat_default %||% "p.adjust"
             shiny::updateSelectInput(session, "ont", selected = ext$ontology)
             rv$relayout <- rv$relayout + 1L
             shiny::showNotification(
@@ -676,6 +717,7 @@ app_server <- function(input, output, session) {
         rv$positions <- NULL
         rv$selected <- NULL
         rv$external_source <- NULL
+        rv$stat <- "p.adjust"
         rv$relayout <- rv$relayout + 1L
         shiny::showNotification(
             sprintf("Enrichment Finished: %d terms tested",
@@ -688,11 +730,12 @@ app_server <- function(input, output, session) {
         shiny::req(rv$ego, rv$dag)
         run <- function(cut) suppressWarnings(prune_go_dag(
             rv$ego, dag = rv$dag,
-            top_n = input$top_n, p_cutoff = cut,
+            top_n = input$top_n, p_cutoff = cut, stat = rv$stat,
             drop_subtree = if (length(rv$drop_roots)) rv$drop_roots else NULL,
             collapse_chains = isTRUE(input$collapse), cluster_jaccard = NULL,
             max_nodes = 300, wrap = input$wrap,
-            counts = "propagated", verbose = FALSE))
+            counts = if (isTRUE(input$propagate)) "propagated" else "direct",
+            verbose = FALSE))
         tryCatch(run(input$p_cutoff), error = function(e) {
             if (grepl("No term passes", conditionMessage(e), fixed = TRUE)) {
                 run(1)
@@ -707,7 +750,11 @@ app_server <- function(input, output, session) {
     # Values that drive the colour scale: the coloured (selected) terms only,
     # because ancestors keep their own fill.
     .fdr_scale_values <- function(d) {
-        p <- d$nodes$p.adjust[d$nodes$selected]
+        p <- if ("color_value" %in% names(d$nodes)) {
+            d$nodes$color_value[d$nodes$selected]
+        } else {
+            d$nodes$p.adjust[d$nodes$selected]
+        }
         p[is.finite(p) & p > 0]
     }
 
@@ -723,26 +770,28 @@ app_server <- function(input, output, session) {
         "Terms changed since the last auto fit; press Auto Set again to refit."
     })
 
+    fit_fdr_scale <- function(d) {
+        p <- .fdr_scale_values(d)
+        br <- .auto_fdr_breaks(p)
+        auto_stamp(c(n = length(p), lo = log10(min(p)),
+                     hi = log10(max(p))))
+        shiny::updateTextInput(session, "fdr_blue",
+                               value = .fmt_break(br[["blue"]]))
+        shiny::updateTextInput(session, "fdr_white",
+                               value = .fmt_break(br[["white"]]))
+        shiny::updateTextInput(session, "fdr_red",
+                               value = .fmt_break(br[["red"]]))
+        shiny::showNotification(
+            sprintf("FDR colour scale set to %s / %s / %s",
+                    .fmt_break(br[["blue"]]), .fmt_break(br[["white"]]),
+                    .fmt_break(br[["red"]])),
+            type = "message", duration = 4)
+        invisible(br)
+    }
+
     shiny::observeEvent(input$fdr_auto, {
         if (is.null(rv$ego)) return()
-        tryCatch({
-            d <- pruned()
-            p <- .fdr_scale_values(d)
-            br <- .auto_fdr_breaks(p)
-            auto_stamp(c(n = length(p), lo = log10(min(p)),
-                         hi = log10(max(p))))
-            shiny::updateTextInput(session, "fdr_blue",
-                                   value = .fmt_break(br[["blue"]]))
-            shiny::updateTextInput(session, "fdr_white",
-                                   value = .fmt_break(br[["white"]]))
-            shiny::updateTextInput(session, "fdr_red",
-                                   value = .fmt_break(br[["red"]]))
-            shiny::showNotification(
-                sprintf("FDR colour scale set to %s / %s / %s",
-                        .fmt_break(br[["blue"]]), .fmt_break(br[["white"]]),
-                        .fmt_break(br[["red"]])),
-                type = "message", duration = 4)
-        }, error = show_error)
+        tryCatch(fit_fdr_scale(pruned()), error = show_error)
     })
 
     shiny::observeEvent(input$node_click, {
@@ -902,11 +951,14 @@ app_server <- function(input, output, session) {
 
     output$external_status <- shiny::renderText({
         if (is.null(rv$ego) || is.null(rv$ego$external_counts)) return("")
-        src <- rv$ego$params$adjusted_source %||% "source FDR"
-        note <- if (identical(src, "source FDR")) {
-            "p.adjust is the source FDR"
+        kind <- rv$ego$params$pvalue_kind %||% "source_adjusted"
+        note <- if (identical(kind, "raw_only")) {
+            "no FDR column; using raw p-values"
+        } else if (identical(kind, "source_adjusted_with_missing")) {
+            sprintf("source FDR kept, %d value(s) missing",
+                    rv$ego$params$n_missing_adjusted %||% 0L)
         } else {
-            "no FDR column; p.adjust is the raw p-value"
+            "p.adjust is the source FDR"
         }
         sprintf("Imported: %s, %d terms; %s.",
                 rv$external_source %||% "external result",
@@ -924,7 +976,12 @@ app_server <- function(input, output, session) {
     output$status <- shiny::renderText({
         if (is.null(rv$ego)) return("")
         d <- pruned()
-        passes <- any(rv$ego$result$p.adjust < input$p_cutoff, na.rm = TRUE)
+        stat_vals <- if (identical(rv$stat, "pvalue")) {
+            rv$ego$result$pvalue
+        } else {
+            rv$ego$result$p.adjust
+        }
+        passes <- any(stat_vals < input$p_cutoff, na.rm = TRUE)
         note <- if (passes) "" else " | no term passes cutoff; showing top nominal terms"
         sprintf(" | %d terms shown (%d selected)%s", nrow(d$nodes),
                 sum(d$nodes$selected), note)
@@ -937,6 +994,10 @@ app_server <- function(input, output, session) {
                 shiny::div(class = "legend-note",
                     style = "color:#b23b3b;",
                     "Invalid FDR values; using 0.05 / 0.01 / 0.0001.")
+            },
+            if (!is.null(rv$ego) && identical(rv$stat, "pvalue")) {
+                shiny::div(class = "legend-note",
+                    "No adjusted p-value in this result: colour and selection use raw p-values.")
             },
             shiny::div(style = sprintf(
                 "height:12px;border-radius:3px;border:1px solid #d9dde3;background:linear-gradient(to right,%s,%s,%s);",
@@ -1196,10 +1257,14 @@ app_server <- function(input, output, session) {
 
 .vis_colours <- function(nodes, colors,
                             fdr_breaks = c(0.05, 0.01, 0.0001)) {
-    sel <- nodes$selected & !is.na(nodes$p.adjust)
+    stat <- if ("color_value" %in% names(nodes)) {
+        nodes$color_value
+    } else {
+        nodes$p.adjust
+    }
+    sel <- nodes$selected & !is.na(stat)
     fdr_breaks <- .check_fdr_breaks(fdr_breaks)
-    pos <- .fdr_position(nodes$p.adjust, fdr_breaks[1], fdr_breaks[2],
-                         fdr_breaks[3])
+    pos <- .fdr_position(stat, fdr_breaks[1], fdr_breaks[2], fdr_breaks[3])
     pal <- grDevices::colorRampPalette(c(colors$low, colors$mid,
                                          colors$high))(101)
     idx <- ifelse(sel, 1 + round(100 * pos), NA_real_)
@@ -1211,8 +1276,9 @@ app_server <- function(input, output, session) {
 .vis_labels <- function(nodes, fontsize, show_name, show_counts, show_p) {
     l1 <- nodes$id
     if (isTRUE(show_p)) {
-        has <- nodes$selected & !is.na(nodes$p.adjust)
-        l1[has] <- paste0(nodes$id[has], " (", .fmt_p(nodes$p.adjust[has]), ")")
+        p <- if ("color_value" %in% names(nodes)) nodes$color_value else nodes$p.adjust
+        has <- nodes$selected & !is.na(p)
+        l1[has] <- paste0(nodes$id[has], " (", .fmt_p(p[has]), ")")
     }
     l2 <- if (isTRUE(show_name)) nodes$label_l2 else rep("", nrow(nodes))
     l3 <- if (isTRUE(show_counts)) nodes$label_l3 else rep("", nrow(nodes))
@@ -1258,6 +1324,12 @@ app_server <- function(input, output, session) {
             intersect(sets[[id]] %||% character(), d$gene)
         })
     }
+    tip_value <- if ("color_value" %in% names(d$nodes)) {
+        d$nodes$color_value
+    } else {
+        d$nodes$p.adjust
+    }
+    tip_label <- if (identical(d$stat, "pvalue")) "p" else "FDR"
     vapply(seq_len(nrow(d$nodes)), function(i) {
         g <- genes[[i]]
         shown <- utils::head(g, 12)
@@ -1267,8 +1339,8 @@ app_server <- function(input, output, session) {
         paste0("<div style='max-width:340px;white-space:normal'>",
                .html_escape(d$nodes$id[i]), "<br>",
                .html_escape(d$nodes$name[i]), "<br>",
-               if (!is.na(d$nodes$p.adjust[i])) {
-                   paste0("FDR: ", .html_escape(.fmt_p(d$nodes$p.adjust[i])),
+               if (!is.na(tip_value[i])) {
+                   paste0(tip_label, ": ", .html_escape(.fmt_p(tip_value[i])),
                           "<br>")
                } else "",
                .html_escape(d$nodes$label_l3[i]),

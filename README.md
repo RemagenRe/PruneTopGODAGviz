@@ -83,7 +83,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.12/PruneTopGODAGviz_0.1.12.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.13/PruneTopGODAGviz_0.1.13.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -99,7 +99,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-The expected version is `0.1.12`.
+The expected version is `0.1.13`.
 
 ## Shiny editor
 
@@ -125,10 +125,39 @@ restore the most recent deletion.
 
 The editor can load a PANTHER over-representation JSON file, or a generic
 CSV/TSV with an ID column, p-value/FDR columns, and optional count columns.
-External results are not re-tested. The source FDR is kept as both `p.adjust`
-and `qvalue`, and the graph count line uses the raw `Count | BgCount` values.
-Imported terms enter the same pruning, editing and export workflow. Uploads are
-limited to 50 MB; larger files are rejected before parsing.
+External results are not re-tested. A supplied adjusted value is kept as both
+`p.adjust` and `qvalue`; a raw p-value is never written into `p.adjust`. If the
+table has no adjusted column, `p.adjust` and `qvalue` stay `NA`, the editor
+selects and colours by raw p-values, and a visible notice says so. When only
+`GeneRatio` / `BgRatio` are present, counts come from the numerator
+(`12/100` gives `Count = 12`); malformed ratios are reported and become
+missing instead of being guessed. The graph count line uses the raw
+`Count | BgCount` values. Imported terms enter the same pruning, editing and
+export workflow. Uploads are limited to 50 MB; larger files are rejected
+before parsing.
+
+## Statistical conventions
+
+- Internal ORA uses the hypergeometric test. BH correction is applied to the
+  terms that pass the size filter and have at least one input hit
+  (`params$test_scope = "hit_terms"`); terms with zero hits are not tested and
+  do not enter the correction.
+- `qvalue` for internal results is a Storey-style estimate with a fixed
+  `lambda = 0.5`. For imported results it is an alias of the supplied adjusted
+  value (`params$qvalue_is_alias = TRUE`), not a re-run of the qvalue
+  algorithm.
+- `counts = "propagated"` follows the true-path rule and can differ from the
+  counts used by the test when the annotation was not propagated first. Use
+  `counts = "direct"` to show exactly the tested counts; the editor does this
+  when **Propagate Annotations to Ancestors** is off.
+- The bundled PANTHER annotation is gene-level and is expanded to every
+  transcript of the gene. Transcript-level results therefore carry gene-level
+  GO evidence; see `inst/extdata/DATA_PROVENANCE.md`.
+- Selected terms are never merged by `cluster_jaccard`; `max_nodes` is a target
+  and protected terms are kept, with a warning when the target cannot be met.
+- Every pruned object carries `provenance` (`package_version`, `r_version`,
+  `source`, `stat`, `counts`, `generated_at`); write it next to a figure with
+  `jsonlite::write_json(x$provenance, "run.json", auto_unbox = TRUE)`.
 
 ## GO OBO file
 
@@ -269,6 +298,6 @@ Package code: MIT. Built-in annotation tables retain their upstream terms; see
 ## Links
 
 - Repository: <https://github.com/RemagenRe/PruneTopGODAGviz>
-- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.12>
+- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.13>
 - Issues: <https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - Chinese README: [README_zh.md](README_zh.md)

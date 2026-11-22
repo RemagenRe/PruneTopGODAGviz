@@ -6,6 +6,15 @@
 #' effect sizes are reported in the same columns used by the rest of the
 #' package.  No external enrichment package is required.
 #'
+#' @details
+#' The multiple-testing correction is applied to the terms that were actually
+#' tested: a term enters the BH correction only when it passes the gene-set
+#' size filter and has at least one input identifier.  Terms with zero hits are
+#' not tested and do not contribute to the correction.  This scope is recorded
+#' as `params$test_scope = "hit_terms"` together with the number of tested
+#' terms.  `qvalue` is a Storey-style estimate with a fixed `lambda = 0.5`, not
+#' a re-implementation of the qvalue package.
+#'
 #' @param gene Character vector of input identifiers (transcripts, genes, ...).
 #' @param annotation A `go_annotation` object from [read_go_annotation()].
 #' @param ont One of `"BP"`, `"MF"` or `"CC"`.
@@ -100,7 +109,12 @@ enrich_go <- function(gene, annotation, ont = "BP", universe = NULL,
                               pAdjustMethod = pAdjustMethod,
                               qvalueCutoff = qvalueCutoff,
                               minGSSize = minGSSize, maxGSSize = maxGSSize,
-                              keytype = keytype %||% annotation$keytype))
+                              keytype = keytype %||% annotation$keytype,
+                              test_scope = "hit_terms",
+                              n_terms_tested = nrow(res),
+                              qvalue_method = "Storey fixed lambda=0.5",
+                              package_version = as.character(utils::packageVersion("PruneTopGODAGviz")),
+                              r_version = R.version.string))
     class(out) <- "go_enrich"
     out
 }

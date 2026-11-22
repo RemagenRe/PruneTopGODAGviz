@@ -71,7 +71,14 @@ import_go_enrich <- function(file, ontology = NULL, dag = NULL, obo = NULL,
             source_file = basename(file),
             input_size = parsed$n_input,
             reference_size = parsed$n_ref,
-            adjusted_source = parsed$adjusted_source %||% "source FDR"
+            adjusted_source = parsed$adjusted_source %||% "source FDR",
+            pvalue_kind = parsed$pvalue_kind %||% "source_adjusted",
+            qvalue_is_alias = isTRUE(parsed$qvalue_is_alias),
+            n_missing_adjusted = parsed$n_missing_adjusted %||% 0L,
+            stat_default = if (all(is.na(res$p.adjust))) "pvalue" else "p.adjust",
+            package_version = as.character(utils::packageVersion("PruneTopGODAGviz")),
+            r_version = R.version.string,
+            imported_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z")
         ),
         external_counts = counts
     )
@@ -183,9 +190,46 @@ parse_panther_json <- function(file) {
     )
     ontology <- .ontology_from_text(
         over$annotation_type %||% over$annotationType %||% "")
+    pvalue_kind <- if (all(is.na(res$p.adjust))) {
+        "raw_only"
+    } else if (anyNA(res$p.adjust)) {
+        "source_adjusted_with_missing"
+    } else {
+        "source_adjusted"
+    }
     list(result = res, counts = counts, input_ids = input_ids,
          n_input = n_input, n_ref = n_ref, ontology = ontology,
-         source = "PANTHER", adjusted_source = "source FDR")
+         source = "PANTHER", adjusted_source = "source FDR",
+         pvalue_kind = pvalue_kind, qvalue_is_alias = TRUE,
+         n_missing_adjusted = sum(is.na(res$p.adjust)))
+}
+
+# Numerator of "numerator/denominator" ratio cells.
+#
+# Returns the numerator. A cell is valid only when it holds two numbers, the
+# denominator is positive and 0 <= numerator <= denominator; anything else
+# becomes NA and is reported once, so a malformed ratio never silently turns
+# into a wrong count.
+.ratio_numerator <- function(x, field) {
+    txt <- trimws(as.character(x))
+    parts <- strsplit(txt, "/", fixed = TRUE)
+    ok <- lengths(parts) == 2L
+    num <- rep(NA_real_, length(txt))
+    den <- rep(NA_real_, length(txt))
+    if (any(ok)) {
+        num[ok] <- suppressWarnings(as.numeric(vapply(parts[ok], `[[`, "", 1L)))
+        den[ok] <- suppressWarnings(as.numeric(vapply(parts[ok], `[[`, "", 2L)))
+    }
+    good <- ok & is.finite(num) & is.finite(den) & num >= 0 & den > 0 &
+        num <= den
+    bad <- !good
+    if (any(bad)) {
+        warning(sum(bad), " invalid ", field,
+                " value(s) ignored; expected 'numerator/denominator'.",
+                call. = FALSE)
+    }
+    num[bad] <- NA_real_
+    num
 }
 
 #' Parse a generic external enrichment table
@@ -238,20 +282,43 @@ parse_external_table <- function(file, ontology = NULL) {
         stringsAsFactors = FALSE
     )
     if (is.null(padj_col)) {
-        res$p.adjust <- res$pvalue
-        adjusted_source <- "p-value (unadjusted)"
+        res$p.adjust <- rep(NA_real_, nrow(res))
+        adjusted_source <- "raw p-value only"
     } else {
         adjusted_source <- "source FDR"
     }
     if (is.null(count_col) && !is.null(gr_col)) {
-        res$Count <- suppressWarnings(as.numeric(sub(".*/", "", as.character(tab[[gr_col]]))))
+        res$Count <- .ratio_numerator(tab[[gr_col]], "GeneRatio")
+    } else if (!is.null(count_col) && !is.null(gr_col)) {
+        num <- .ratio_numerator(tab[[gr_col]], "GeneRatio")
+        bad <- !is.na(num) & !is.na(res$Count) & num != res$Count
+        if (any(bad)) {
+            warning(sum(bad), " row(s) have Count that differs from the ",
+                    "GeneRatio numerator; the Count column was kept.",
+                    call. = FALSE)
+        }
     }
     if (is.null(bg_col) && !is.null(br_col)) {
-        res$BgCount <- suppressWarnings(as.numeric(sub(".*/", "", as.character(tab[[br_col]]))))
+        res$BgCount <- .ratio_numerator(tab[[br_col]], "BgRatio")
+    } else if (!is.null(bg_col) && !is.null(br_col)) {
+        num <- .ratio_numerator(tab[[br_col]], "BgRatio")
+        bad <- !is.na(num) & !is.na(res$BgCount) & num != res$BgCount
+        if (any(bad)) {
+            warning(sum(bad), " row(s) have BgCount that differs from the ",
+                    "BgRatio numerator; the BgCount column was kept.",
+                    call. = FALSE)
+        }
     }
     if (is.null(gene_col)) res$geneID <- ""
-    res$p.adjust <- ifelse(is.na(res$p.adjust), res$pvalue, res$p.adjust)
+    # A raw p-value must never impersonate an adjusted one: missing stays NA.
     res$qvalue <- res$p.adjust
+    pvalue_kind <- if (!nrow(res) || all(is.na(res$p.adjust))) {
+        "raw_only"
+    } else if (anyNA(res$p.adjust)) {
+        "source_adjusted_with_missing"
+    } else {
+        "source_adjusted"
+    }
     res$RichFactor <- ifelse(!is.na(res$BgCount) & res$BgCount > 0,
                              res$Count / res$BgCount, NA_real_)
     res$source <- "external table"
@@ -285,7 +352,9 @@ parse_external_table <- function(file, ontology = NULL) {
     list(result = res, counts = counts, input_ids = input_ids,
          n_input = n_input, n_ref = n_ref,
          ontology = .check_ont(ontology %||% detected %||% "BP"),
-         source = "external table", adjusted_source = adjusted_source)
+         source = "external table", adjusted_source = adjusted_source,
+         pvalue_kind = pvalue_kind, qvalue_is_alias = TRUE,
+         n_missing_adjusted = sum(is.na(res$p.adjust)))
 }
 
 .infer_reference_size <- function(res, n_input) {

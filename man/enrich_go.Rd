@@ -52,6 +52,15 @@ hypergeometric distribution, p-values are adjusted with \code{p.adjust()}, and
 effect sizes are reported in the same columns used by the rest of the
 package.  No external enrichment package is required.
 }
+\details{
+The multiple-testing correction is applied to the terms that were actually
+tested: a term enters the BH correction only when it passes the gene-set
+size filter and has at least one input identifier.  Terms with zero hits are
+not tested and do not contribute to the correction.  This scope is recorded
+as \code{params$test_scope = "hit_terms"} together with the number of tested
+terms.  \code{qvalue} is a Storey-style estimate with a fixed \code{lambda = 0.5}, not
+a re-implementation of the qvalue package.
+}
 \examples{
 \dontrun{
 ego <- enrich_go(my_genes, anno, ont = "BP")

@@ -78,7 +78,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.12/PruneTopGODAGviz_0.1.12.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.13/PruneTopGODAGviz_0.1.13.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -94,7 +94,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.12`。
+应显示 `0.1.13`。
 
 ## Shiny 编辑器
 
@@ -118,9 +118,31 @@ PruneTopGODAGviz::run_app()
 ## 导入外部富集结果
 
 编辑器可以导入 PANTHER over-representation JSON，也可以导入包含 ID、p 值/FDR
-和可选计数列的通用 CSV/TSV。外部结果不重新做统计；来源 FDR 同时作为
-`p.adjust` 和 `qvalue`，图中的计数行只显示原始 `Count | BgCount`。导入后可以
-沿用现有的剪枝、编辑和导出流程。上传文件上限为 50 MB，超过的文件在解析前直接拒绝。
+和可选计数列的通用 CSV/TSV。外部结果不重新做统计：来源给的是校正值，就原样放在
+`p.adjust` 与 `qvalue`；来源只有原始 p 值，`p.adjust` 与 `qvalue` 保持 `NA`，
+编辑器的选择和配色改用原始 p 值并给出提示，绝不把原始 p 值写进 `p.adjust`。
+只有 `GeneRatio` / `BgRatio` 时，计数取分子（`12/100` 得 `Count = 12`）；
+格式不合法的比值会给出警告并置为缺失，不做猜测。图中的计数行只显示原始
+`Count | BgCount`。导入后可以沿用现有的剪枝、编辑和导出流程。上传文件上限为
+50 MB，超过的文件在解析前直接拒绝。
+
+## 统计口径
+
+- 内部 ORA 用超几何检验。BH 校正只作用于通过基因集大小过滤且至少有一个输入命中的
+  term（`params$test_scope = "hit_terms"`）；零命中的 term 不参与检验，也不进入校正。
+- 内部结果的 `qvalue` 是固定 `lambda = 0.5` 的 Storey 风格估计；导入结果的
+  `qvalue` 是来源校正值的别名（`params$qvalue_is_alias = TRUE`），不代表重新跑了
+  qvalue 算法。
+- `counts = "propagated"` 按 true-path 规则统计，可能不同于检验时用的计数；
+  要显示与检验完全一致的计数请用 `counts = "direct"`。界面在关闭
+  **Propagate Annotations to Ancestors** 时会自动使用 direct。
+- 内置 PANTHER 注释是基因级的，会扩展到该基因的每条转录本：转录本层面的结果
+  携带的仍是基因级 GO 证据，见 `inst/extdata/DATA_PROVENANCE.md`。
+- `cluster_jaccard` 不会合并 selected term；`max_nodes` 是目标上限，受保护的 term
+  会被保留，达不到上限时给出警告。
+- 每个剪枝结果都带 `provenance`（`package_version`、`r_version`、`source`、`stat`、
+  `counts`、`generated_at`），可用 `jsonlite::write_json(x$provenance, "run.json")`
+  与图片一起保存。
 
 ## GO OBO 文件
 
@@ -260,6 +282,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.12>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.13>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

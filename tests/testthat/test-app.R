@@ -1,4 +1,4 @@
-test_that("the app UI is built in English with Arial", {
+test_that("the app UI is built in English with a free font stack", {
     skip_if_not_installed("shiny")
     skip_if_not_installed("visNetwork")
     skip_if_not_installed("colourpicker")
@@ -29,7 +29,16 @@ test_that("the app UI is built in English with Arial", {
     expect_true(grepl("Show Enrichment Counts", html, fixed = TRUE))
     expect_true(grepl("Match on-screen layout", html, fixed = TRUE))
     expect_true(grepl("Include colour legend", html, fixed = TRUE))
-    expect_true(grepl("Import External Result", html, fixed = TRUE))
+    expect_true(grepl("Or You Can Import External Result", html, fixed = TRUE))
+    expect_true(grepl("\u2460 Upload My Own GO Annotations", html, fixed = TRUE))
+    expect_true(grepl("\u2461 Upload Gene / Transcript List File", html, fixed = TRUE))
+    expect_true(grepl("\u2462 Run Enrichment", html, fixed = TRUE))
+    expect_true(grepl("\u2463 Export Figure", html, fixed = TRUE))
+    expect_true(grepl("\u2464 Export Tables", html, fixed = TRUE))
+    expect_true(grepl("Clear / Start Over", html, fixed = TRUE))
+    expect_true(grepl("Load Example", html, fixed = TRUE))
+    expect_false(grepl("Load Example Data", html, fixed = TRUE))
+    expect_true(grepl("browse_gene", html, fixed = TRUE))
     expect_true(grepl("Auto Set from Current Terms", html, fixed = TRUE))
     expect_true(grepl("(max 50 MB)", html, fixed = TRUE))
     expect_true(grepl("Or Use a Built-in Annotation", html, fixed = TRUE))
@@ -48,7 +57,9 @@ test_that("the app UI is built in English with Arial", {
     expect_true(grepl("White-gold-rose (default)", html, fixed = TRUE))
     expect_false(grepl("At_GO_info.csv", html, fixed = TRUE))
     expect_false(grepl("GO_info_example.png", html, fixed = TRUE))
-    expect_true(grepl("Arial", html))
+    expect_true(grepl("Liberation Sans", html, fixed = TRUE))
+    expect_true(grepl("DejaVu Sans", html, fixed = TRUE))
+    expect_false(grepl("Arial", html, fixed = TRUE))
 })
 
 test_that("the interactive graph carries events, labels and colours", {

@@ -73,7 +73,12 @@ plot_go_dag <- function(x, layout = NULL, fill = c("#2878B5", "#FFFFFF", "#c8242
     nodes$lab2 <- if (isTRUE(show_name)) nodes$label_l2 else rep("", nrow(nodes))
     nodes$lab3 <- if (isTRUE(show_counts)) nodes$label_l3 else rep("", nrow(nodes))
 
-    fv <- .fdr_position(nodes$p.adjust, fdr_breaks[1], fdr_breaks[2],
+    colour_stat <- if ("color_value" %in% names(nodes)) {
+        nodes$color_value
+    } else {
+        nodes$p.adjust
+    }
+    fv <- .fdr_position(colour_stat, fdr_breaks[1], fdr_breaks[2],
                           fdr_breaks[3])
     fv[!nodes$selected] <- NA_real_
     nodes$fill_value <- fv
@@ -165,7 +170,12 @@ plot_go_dag <- function(x, layout = NULL, fill = c("#2878B5", "#FFFFFF", "#c8242
             legend_extra <- lh + 0.16
         }
         for (ly in .inset_legend(pos$x, pos$y, lw, lh, fill, edge_col,
-                                 fontsize, font_family, bg, fdr_breaks)) {
+                                 fontsize, font_family, bg, fdr_breaks,
+                                 stat_label = if (identical(stat, "pvalue")) {
+                                     "p"
+                                 } else {
+                                     "FDR"
+                                 })) {
             p <- p + ly
         }
     }
@@ -238,7 +248,8 @@ plot_go_dag <- function(x, layout = NULL, fill = c("#2878B5", "#FFFFFF", "#c8242
 
 .inset_legend <- function(x0, y0, width, height, fill, edge_col, fontsize,
                           family, bg = "white",
-                          fdr_breaks = c(0.05, 0.01, 0.0001)) {
+                          fdr_breaks = c(0.05, 0.01, 0.0001),
+                          stat_label = "FDR") {
     col_a <- unname(edge_col[["is_a"]])
     col_p <- unname(edge_col[["part_of"]])
     if (is.na(col_a)) col_a <- "#000000"
@@ -260,7 +271,7 @@ plot_go_dag <- function(x, layout = NULL, fill = c("#2878B5", "#FFFFFF", "#c8242
     }
     ts <- fontsize / .pt_to_mm
     layers[[length(layers) + 1L]] <- ggplot2::annotate(
-        "text", x = bar_x0, y = y0 + height - 0.02, label = "FDR",
+        "text", x = bar_x0, y = y0 + height - 0.02, label = stat_label,
         hjust = 0, vjust = 1, size = ts, family = family)
     fdr_labels <- .fmt_break(fdr_breaks)
     for (k in list(c(bar_y0, fdr_labels[1]),

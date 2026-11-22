@@ -1,3 +1,24 @@
+# PruneTopGODAGviz 0.1.13
+
+* Fix the `GeneRatio` / `BgRatio` fallback: counts now use the numerator
+  (`12/100` -> 12), invalid ratios are reported instead of guessed, and a
+  `Count` that disagrees with the ratio is flagged.
+* Stop writing raw p-values into `p.adjust`: a missing adjusted column keeps
+  `p.adjust` and `qvalue` as `NA`, the editor switches to raw p-values and says
+  so, and missing FDR entries are no longer backfilled.
+* Carry the chosen statistic through pruning, colouring, labels, tooltips and
+  the exported legend (`p` vs `FDR`).
+* `max_nodes` now reports when protected terms exceed the target; selected
+  terms are documented as protected from `cluster_jaccard`.
+* Document the BH test scope, the `qvalue` alias for imported results, the
+  difference between display counts and tested counts, and the
+  gene-to-transcript expansion of the bundled PANTHER annotation.
+* Fix pruning a graph that has no edges (single-node results).
+* Number the main panels (①-⑤), enlarge their headings with one consistent
+  style, and switch the UI to a free font stack (no Arial).
+* Add a Browse modal for the gene/transcript list that shows the expected file
+  format, mirroring the annotation example.
+* Add **Clear / Start Over** to return to the state of a fresh session.
 # PruneTopGODAGviz 0.1.12
 
 * Import PANTHER over-representation JSON into the Shiny editor and reuse the

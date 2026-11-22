@@ -25,12 +25,18 @@
 #' @param collapse_chains Collapse linear, non-selected ancestor chains.
 #' @param collapse_min_length Minimum chain length (in terms) to collapse.
 #' @param cluster_jaccard Merge sibling leaves whose gene sets have a Jaccard
-#'   index of at least this value.  `NULL` disables merging.
-#' @param max_nodes Hard cap on the number of displayed terms.
+#'   index of at least this value.  `NULL` disables merging.  Selected terms are
+#'   never merged away; only non-selected sibling leaves can be merged.
+#' @param max_nodes Target cap on the number of displayed terms.  Selected terms
+#'   are protected, so when they alone exceed the cap the graph keeps them, a
+#'   warning is issued and `params$max_nodes_exceeded` is `TRUE`.
 #' @param wrap Number of characters per line when wrapping term names.
 #' @param counts `"propagated"` (default) counts input and background genes
 #'   annotated to the term or any descendant (true-path rule, as in agriGO);
-#'   `"direct"` counts only genes annotated to the term itself.
+#'   `"direct"` counts only genes annotated to the term itself.  If the
+#'   enrichment was run on direct annotations, `"propagated"` counts describe a
+#'   different gene set from the ORA statistics; use `"direct"` to keep the
+#'   displayed counts identical to the tested counts.
 #' @param verbose Print a summary.
 #'
 #' @return A `pruned_go_dag` object with `nodes`, `edges`, `dropped`, `params`
@@ -183,7 +189,7 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
     nodes <- dag$nodes[dag$nodes$id %in% keep_final, , drop = FALSE]
     edges <- dag$edges[dag$edges$parent %in% keep_final &
                            dag$edges$child %in% keep_final, , drop = FALSE]
-    edges$n_skipped <- 0L
+    edges$n_skipped <- rep(0L, nrow(edges))
     n_collapsed <- stats::setNames(integer(nrow(nodes)), nodes$id)
     collapsed_all <- list()
 
@@ -217,11 +223,19 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
         }
     }
 
+    max_nodes_exceeded <- FALSE
     if (is.finite(max_nodes) && nrow(nodes) > max_nodes) {
         res_m <- .cap_nodes(nodes, edges, selected, stat_map, max_nodes)
         nodes <- res_m$nodes
         edges <- res_m$edges
         reason[names(res_m$dropped)] <- "max_nodes"
+        if (nrow(nodes) > max_nodes) {
+            max_nodes_exceeded <- TRUE
+            warning("max_nodes = ", max_nodes, " could not be reached: ",
+                    nrow(nodes), " protected term(s) are kept. ",
+                    "Selected terms are never dropped by the cap.",
+                    call. = FALSE)
+        }
     }
 
     lev <- .dag_levels(list(nodes = nodes, edges = edges))
@@ -275,6 +289,9 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
     nodes$pvalue <- unname(x$result$pvalue[match(nodes$id, x$result$ID)])
     nodes$p.adjust <- unname(x$result$p.adjust[match(nodes$id, x$result$ID)])
     nodes$geneID <- unname(x$result$geneID[match(nodes$id, x$result$ID)])
+    # Colour and rank with the statistic the caller selected; `pvalue` is used
+    # when an imported table has no adjusted values at all.
+    nodes$color_value <- as.numeric(nodes[[stat]])
 
     show_stat <- nodes[[stat]]
     nodes$label_l1 <- nodes$id
@@ -313,7 +330,15 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
                               collapse_chains = collapse_chains,
                               cluster_jaccard = cluster_jaccard,
                               max_nodes = max_nodes, wrap = wrap,
-                              counts = counts))
+                              counts = counts,
+                              max_nodes_exceeded = max_nodes_exceeded))
+    out$provenance <- list(
+        package_version = as.character(utils::packageVersion("PruneTopGODAGviz")),
+        r_version = R.version.string,
+        source = x$params$source %||% x$params$keytype %||% "internal",
+        source_file = x$params$source_file %||% NA_character_,
+        stat = stat, counts = counts,
+        generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"))
     class(out) <- "pruned_go_dag"
     if (verbose) {
         message(sprintf("Pruned DAG: %d shown (%d selected), %d dropped",

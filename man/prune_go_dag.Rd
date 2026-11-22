@@ -65,15 +65,21 @@ the full ancestry up to the ontology root.}
 \item{collapse_min_length}{Minimum chain length (in terms) to collapse.}
 
 \item{cluster_jaccard}{Merge sibling leaves whose gene sets have a Jaccard
-index of at least this value.  \code{NULL} disables merging.}
+index of at least this value.  \code{NULL} disables merging.  Selected terms are
+never merged away; only non-selected sibling leaves can be merged.}
 
-\item{max_nodes}{Hard cap on the number of displayed terms.}
+\item{max_nodes}{Target cap on the number of displayed terms.  Selected terms
+are protected, so when they alone exceed the cap the graph keeps them, a
+warning is issued and \code{params$max_nodes_exceeded} is \code{TRUE}.}
 
 \item{wrap}{Number of characters per line when wrapping term names.}
 
 \item{counts}{\code{"propagated"} (default) counts input and background genes
 annotated to the term or any descendant (true-path rule, as in agriGO);
-\code{"direct"} counts only genes annotated to the term itself.}
+\code{"direct"} counts only genes annotated to the term itself.  If the
+enrichment was run on direct annotations, \code{"propagated"} counts describe a
+different gene set from the ORA statistics; use \code{"direct"} to keep the
+displayed counts identical to the tested counts.}
 
 \item{verbose}{Print a summary.}
 }

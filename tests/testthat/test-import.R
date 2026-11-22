@@ -142,3 +142,114 @@ test_that("external import enforces the file size limit", {
                          max_bytes = 1e6, verbose = FALSE),
         "go_enrich")
 })
+test_that("ratio columns contribute the numerator, not the denominator", {
+    dag <- mini_dag("BP")
+    ids <- dag$nodes$id[seq_len(2)]
+    tab <- data.frame(
+        Term = ids, Description = c("term one", "term two"),
+        PValue = c(1e-4, 0.02), FDR = c(1e-3, 0.04),
+        GeneRatio = c("12/100", "4/80"),
+        BgRatio = c("300/20000", "50/5000"),
+        stringsAsFactors = FALSE
+    )
+    f <- tempfile(fileext = ".csv")
+    utils::write.csv(tab, f, row.names = FALSE)
+    x <- parse_external_table(f, ontology = "BP")
+    expect_equal(x$result$Count, c(12, 4))
+    expect_equal(x$result$BgCount, c(300, 50))
+    expect_equal(x$result$RichFactor, c(12 / 300, 4 / 50))
+    expect_equal(x$counts$count_label, c("12 | 300", "4 | 50"))
+})
+
+test_that("Count that disagrees with the ratio numerator is reported", {
+    dag <- mini_dag("BP")
+    tab <- data.frame(
+        Term = dag$nodes$id[[1]], Description = "term one",
+        PValue = 1e-4, FDR = 1e-3, Count = 12,
+        GeneRatio = "10/100", BgCount = 300, BgRatio = "300/20000",
+        stringsAsFactors = FALSE
+    )
+    f <- tempfile(fileext = ".csv")
+    utils::write.csv(tab, f, row.names = FALSE)
+    expect_warning(parse_external_table(f, ontology = "BP"),
+                   "differs from the GeneRatio numerator")
+    x <- suppressWarnings(parse_external_table(f, ontology = "BP"))
+    expect_equal(x$result$Count, 12)
+})
+
+test_that("malformed ratios become NA with a warning", {
+    dag <- mini_dag("BP")
+    tab <- data.frame(
+        Term = dag$nodes$id[seq_len(3)], Description = c("a", "b", "c"),
+        PValue = c(0.01, 0.02, 0.03), FDR = c(0.04, 0.05, 0.06),
+        GeneRatio = c("12/0", "a/b", ""),
+        stringsAsFactors = FALSE
+    )
+    f <- tempfile(fileext = ".csv")
+    utils::write.csv(tab, f, row.names = FALSE)
+    expect_warning(parse_external_table(f, ontology = "BP"),
+                   "invalid GeneRatio")
+    x <- suppressWarnings(parse_external_table(f, ontology = "BP"))
+    expect_true(all(is.na(x$result$Count)))
+    expect_true(all(!nzchar(x$result$count_label)))
+})
+
+test_that("a raw p-value never impersonates an adjusted p-value", {
+    dag <- mini_dag("BP")
+    ids <- dag$nodes$id[seq_len(2)]
+    tab <- data.frame(
+        Term = ids, Description = c("term one", "term two"),
+        PValue = c(0.03, 0.5), Count = c(12, 4), BgCount = c(300, 50),
+        stringsAsFactors = FALSE
+    )
+    f <- tempfile(fileext = ".csv")
+    utils::write.csv(tab, f, row.names = FALSE)
+    x <- parse_external_table(f, ontology = "BP")
+    expect_equal(x$result$pvalue, c(0.03, 0.5))
+    expect_true(all(is.na(x$result$p.adjust)))
+    expect_true(all(is.na(x$result$qvalue)))
+    expect_equal(x$pvalue_kind, "raw_only")
+
+    y <- import_go_enrich(f, ontology = "BP", dag = dag, verbose = FALSE)
+    expect_equal(y$params$stat_default, "pvalue")
+    p <- prune_go_dag(y, dag = dag, stat = "pvalue", top_n = 2,
+                      p_cutoff = 0.05, verbose = FALSE)
+    expect_true(any(p$nodes$selected))
+    expect_true(all(is.na(p$nodes$p.adjust[p$nodes$selected])))
+})
+
+test_that("missing FDR entries stay missing", {
+    dag <- mini_dag("BP")
+    tab <- data.frame(
+        Term = dag$nodes$id[seq_len(2)], Description = c("a", "b"),
+        PValue = c(0.001, 0.02), FDR = c(0.01, NA),
+        Count = c(12, 4), BgCount = c(300, 50),
+        stringsAsFactors = FALSE
+    )
+    f <- tempfile(fileext = ".csv")
+    utils::write.csv(tab, f, row.names = FALSE)
+    x <- parse_external_table(f, ontology = "BP")
+    expect_equal(x$result$p.adjust, c(0.01, NA))
+    expect_equal(x$pvalue_kind, "source_adjusted_with_missing")
+    expect_equal(x$n_missing_adjusted, 1L)
+})
+test_that("import and pruning record provenance and the used statistic", {
+    dag <- mini_dag("BP")
+    ids <- dag$nodes$id[seq_len(2)]
+    tab <- data.frame(
+        Term = ids, Description = c("term one", "term two"),
+        PValue = c(1e-3, 0.02), FDR = c(1e-2, 0.05),
+        Count = c(12, 4), BgCount = c(300, 50),
+        stringsAsFactors = FALSE
+    )
+    f <- tempfile(fileext = ".csv")
+    utils::write.csv(tab, f, row.names = FALSE)
+    y <- import_go_enrich(f, ontology = "BP", dag = dag, verbose = FALSE)
+    expect_true(nzchar(y$params$package_version))
+    expect_true(nzchar(y$params$r_version))
+    p <- prune_go_dag(y, dag = dag, stat = "p.adjust", top_n = 2,
+                      p_cutoff = 1, verbose = FALSE)
+    expect_equal(p$provenance$stat, "p.adjust")
+    expect_true(nzchar(p$provenance$package_version))
+    expect_equal(p$nodes$color_value, p$nodes$p.adjust)
+})

@@ -81,3 +81,13 @@ test_that("the decision table is written", {
                         names(tab)))
     expect_true(any(tab$action == "kept_selected"))
 })
+test_that("max_nodes reports when protected terms exceed the cap", {
+    anno <- mini_annotation()
+    ego <- enrich_go(mini_genes(), anno, ont = "BP", verbose = FALSE)
+    expect_warning(
+        d <- prune_go_dag(ego, dag = mini_dag("BP"), top_n = 5,
+                          p_cutoff = 1, max_nodes = 2, verbose = FALSE),
+        "could not be reached")
+    expect_gt(nrow(d$nodes), 2)
+    expect_true(isTRUE(d$params$max_nodes_exceeded))
+})

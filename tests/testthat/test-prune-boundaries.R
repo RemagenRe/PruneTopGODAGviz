@@ -34,3 +34,21 @@ test_that("layout_from_positions fills missing and duplicate coordinates", {
     expect_true(all(is.finite(lay2$nodes$x)))
     expect_true(all(is.finite(lay2$nodes$y)))
 })
+test_that("selected sibling leaves are protected from jaccard merging", {
+    nodes <- data.frame(id = c("A", "L1", "L2"),
+                        name = c("parent", "one", "two"),
+                        selected = c(FALSE, TRUE, TRUE),
+                        stringsAsFactors = FALSE)
+    edges <- data.frame(parent = c("A", "A"), child = c("L1", "L2"),
+                        type = "is_a", stringsAsFactors = FALSE)
+    annotation <- list(pairs = data.frame(
+        go_id = c("L1", "L1", "L2", "L2"),
+        transcript = c("g1", "g2", "g1", "g2"),
+        stringsAsFactors = FALSE))
+    stat <- c(A = 1, L1 = 0.01, L2 = 0.02)
+    z <- .cluster_jaccard(nodes, edges, selected = c("L1", "L2"),
+                          annotation = annotation, stat_map = stat,
+                          threshold = 0.5)
+    expect_equal(length(z$merged), 0L)
+    expect_true(all(c("L1", "L2") %in% z$nodes$id))
+})
