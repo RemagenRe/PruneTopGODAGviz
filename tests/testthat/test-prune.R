@@ -81,13 +81,55 @@ test_that("the decision table is written", {
                         names(tab)))
     expect_true(any(tab$action == "kept_selected"))
 })
-test_that("max_nodes reports when protected terms exceed the cap", {
+test_that("max_nodes reports node and selected counts separately", {
     anno <- mini_annotation()
     ego <- enrich_go(mini_genes(), anno, ont = "BP", verbose = FALSE)
-    expect_warning(
-        d <- prune_go_dag(ego, dag = mini_dag("BP"), top_n = 5,
-                          p_cutoff = 1, max_nodes = 2, verbose = FALSE),
-        "could not be reached")
+    msgs <- character()
+    d <- withCallingHandlers(
+        prune_go_dag(ego, dag = mini_dag("BP"), top_n = 5, p_cutoff = 1,
+                     max_nodes = 2, verbose = FALSE),
+        warning = function(w) {
+            msgs <<- c(msgs, conditionMessage(w))
+            invokeRestart("muffleWarning")
+        })
+    expect_length(msgs, 1L)
+    expect_match(msgs, "could not be reached")
+    expect_true(grepl(paste0(nrow(d$nodes), " node(s) remain"), msgs,
+                      fixed = TRUE))
+    expect_true(grepl(paste0(sum(d$nodes$selected),
+                             " selected term(s) protected"), msgs,
+                      fixed = TRUE))
+    expect_true(sum(d$nodes$selected) < nrow(d$nodes))
     expect_gt(nrow(d$nodes), 2)
     expect_true(isTRUE(d$params$max_nodes_exceeded))
+})
+
+test_that("direct and propagated counts match their definitions", {
+    a <- mini_annotation()
+    e <- enrich_go(mini_genes(), a, ont = "BP", verbose = FALSE)
+    dag <- mini_dag("BP")
+    args <- list(x = e, dag = dag, top_n = 0, keep = "GO:0015979",
+                 expand_depth = 2, p_cutoff = 1, max_nodes = Inf,
+                 verbose = FALSE)
+    direct <- do.call(prune_go_dag, c(args, list(counts = "direct")))
+    prop <- do.call(prune_go_dag, c(args, list(counts = "propagated")))
+    sets <- split(a$pairs$transcript, a$pairs$go_id)
+    for (i in seq_len(nrow(direct$nodes))) {
+        id <- direct$nodes$id[[i]]
+        own <- if (is.null(sets[[id]])) character() else sets[[id]]
+        expect_equal(direct$nodes$n_in_term[[i]],
+                     length(intersect(own, e$gene)), info = id)
+        expect_equal(direct$nodes$n_bg_term[[i]],
+                     length(intersect(own, e$universe)), info = id)
+        ids <- dag_descendants(dag, id)   # true-path rule, term included
+        expect_true(id %in% ids, info = id)
+        pool <- unique(unlist(sets[ids], use.names = FALSE))
+        expect_equal(prop$nodes$n_in_term[[i]],
+                     length(intersect(pool, e$gene)), info = id)
+        expect_equal(prop$nodes$n_bg_term[[i]],
+                     length(intersect(pool, e$universe)), info = id)
+    }
+    expect_true(any(prop$nodes$n_in_term > direct$nodes$n_in_term))
+    expect_equal(direct$nodes$n_in_universe[[1]], length(e$gene))
+    expect_equal(direct$nodes$n_bg_universe[[1]], length(e$universe))
 })

@@ -83,7 +83,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.14/PruneTopGODAGviz_0.1.14.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.15/PruneTopGODAGviz_0.1.15.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -99,7 +99,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-The expected version is `0.1.14`.
+The expected version is `0.1.15`.
 
 ## Shiny editor
 
@@ -153,10 +153,14 @@ before parsing.
 - The bundled PANTHER annotation is gene-level and is expanded to every
   transcript of the gene. Transcript-level results therefore carry gene-level
   GO evidence; see `inst/extdata/DATA_PROVENANCE.md`.
-- Selected terms are never merged by `cluster_jaccard`; `max_nodes` is a target
-  and protected terms are kept, with a warning when the target cannot be met.
+- Selected terms are never merged by `cluster_jaccard`; `max_nodes` is a target.
+  When the target cannot be met the warning reports how many nodes remain and
+  how many of them are protected selected terms.
 - `expand_depth` counts directed edges below each selected term (breadth-first),
   not global GO levels; `0` keeps only selected terms and their ancestors.
+  Expansion stops at terms removed by `drop`, `drop_subtree`, `exclude_regex`
+  or `keep_branches`, so no descendant is shown without a path to a selected
+  term; `Inf` disables expansion.
 - Every pruned object carries `provenance` (`package_version`, `r_version`,
   `source`, `stat`, `counts`, `generated_at`); write it next to a figure with
   `jsonlite::write_json(x$provenance, "run.json", auto_unbox = TRUE)`.
@@ -304,6 +308,6 @@ Package code: MIT. Built-in annotation tables retain their upstream terms; see
 ## Links
 
 - Repository: <https://github.com/RemagenRe/PruneTopGODAGviz>
-- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.14>
+- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.15>
 - Issues: <https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - Chinese README: [README_zh.md](README_zh.md)

@@ -23,7 +23,11 @@
 #'   the full ancestry up to the ontology root.
 #' @param expand_depth Number of directed edges to follow below each selected
 #'   term (breadth-first from every selected term).  `0` keeps only the
-#'   selected terms and their ancestors.
+#'   selected terms and their ancestors.  Expansion stops at terms removed by
+#'   `drop`, `drop_subtree`, `exclude_regex` or `keep_branches`: a descendant
+#'   that can only be reached through a removed term is not displayed (the
+#'   pruning table records it as `disconnected`).  Use a non-negative finite
+#'   number; `Inf` disables expansion.
 #' @param collapse_chains Collapse linear, non-selected ancestor chains.
 #' @param collapse_min_length Minimum chain length (in terms) to collapse.
 #' @param cluster_jaccard Merge sibling leaves whose gene sets have a Jaccard
@@ -31,7 +35,8 @@
 #'   never merged away; only non-selected sibling leaves can be merged.
 #' @param max_nodes Target cap on the number of displayed terms.  Selected terms
 #'   are protected, so when they alone exceed the cap the graph keeps them, a
-#'   warning is issued and `params$max_nodes_exceeded` is `TRUE`.
+#'   warning reports how many nodes remain and how many of them are selected,
+#'   and `params$max_nodes_exceeded` is `TRUE`.
 #' @param wrap Number of characters per line when wrapping term names.
 #' @param counts `"propagated"` (default) counts input and background genes
 #'   annotated to the term or any descendant (true-path rule, as in agriGO);
@@ -198,8 +203,27 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
     needed <- union(selected, dag_ancestors(sub, selected))
     keep_final <- intersect(cand, union(union(needed, expanded),
                                         branch_roots))
+    lost <- character()
+    if (length(expanded)) {
+        # A filter that removes an intermediate term (drop, exclude_regex,
+        # keep_branches) cuts every path below it.  Deeper descendants found on
+        # the unfiltered DAG would then be drawn without a parent, so drop the
+        # expansion instead of promoting the single-term filter to a subtree
+        # filter; `drop_subtree` remains the way to hide a whole branch.
+        reach <- dag_descendants(.dag_subset(dag, keep_final), selected)
+        lost <- setdiff(intersect(expanded, keep_final), reach)
+        if (length(lost)) {
+            keep_final <- setdiff(keep_final, lost)
+            warning("Dropped ", length(lost), " expanded term(s) that no ",
+                    "longer reach a selected term after filtering (",
+                    paste(utils::head(lost, 3), collapse = ", "),
+                    "). Use 'drop_subtree' to hide a whole branch, or keep ",
+                    "the intermediate term.", call. = FALSE)
+        }
+    }
     reason[setdiff(cand, keep_final)] <- "off_path"
-    reason[expanded] <- "expanded"
+    reason[intersect(expanded, keep_final)] <- "expanded"
+    reason[lost] <- "disconnected"
 
     nodes <- dag$nodes[dag$nodes$id %in% keep_final, , drop = FALSE]
     edges <- dag$edges[dag$edges$parent %in% keep_final &
@@ -247,8 +271,9 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
         if (nrow(nodes) > max_nodes) {
             max_nodes_exceeded <- TRUE
             warning("max_nodes = ", max_nodes, " could not be reached: ",
-                    nrow(nodes), " protected term(s) are kept. ",
-                    "Selected terms are never dropped by the cap.",
+                    nrow(nodes), " node(s) remain (",
+                    sum(nodes$id %in% selected), " selected term(s) protected; ",
+                    "selected terms are never dropped by the cap).",
                     call. = FALSE)
         }
     }

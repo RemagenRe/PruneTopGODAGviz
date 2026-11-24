@@ -1,3 +1,18 @@
+# PruneTopGODAGviz 0.1.15
+
+* `expand_depth` no longer leaves a floating descendant when an intermediate
+  term is removed by `drop`, `drop_subtree`, `exclude_regex` or
+  `keep_branches`.  A descendant that can only be reached through a removed
+  term is dropped, recorded as `disconnected` in the pruning table and
+  reported with a warning.  `drop` still removes a single term, and a
+  descendant keeps its place when another path still reaches it; `drop` is
+  not promoted to `drop_subtree`.
+* The `max_nodes` warning now reports the remaining node count and the number
+  of protected selected terms separately, instead of calling every remaining
+  node a protected term.
+* Document that `expand_depth` takes a non-negative finite number and that
+  `Inf` disables expansion.
+
 # PruneTopGODAGviz 0.1.14
 
 * `expand_depth` now follows each selected term by directed breadth-first hops

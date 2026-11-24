@@ -78,7 +78,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.14/PruneTopGODAGviz_0.1.14.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.15/PruneTopGODAGviz_0.1.15.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -94,7 +94,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.14`。
+应显示 `0.1.15`。
 
 ## Shiny 编辑器
 
@@ -138,10 +138,12 @@ PruneTopGODAGviz::run_app()
   **Propagate Annotations to Ancestors** 时会自动使用 direct。
 - 内置 PANTHER 注释是基因级的，会扩展到该基因的每条转录本：转录本层面的结果
   携带的仍是基因级 GO 证据，见 `inst/extdata/DATA_PROVENANCE.md`。
-- `cluster_jaccard` 不会合并 selected term；`max_nodes` 是目标上限，受保护的 term
-  会被保留，达不到上限时给出警告。
+- `cluster_jaccard` 不会合并 selected term；`max_nodes` 是目标上限。达不到上限时，
+  警告会分别给出剩余节点数与其中受保护的 selected term 数。
 - `expand_depth` 从每个 selected term 沿有向边向下数“边数”（BFS），不是全局 GO
-  层级；`0` 只保留 selected term 及其祖先。
+  层级；`0` 只保留 selected term 及其祖先。扩展会在 `drop`、`drop_subtree`、
+  `exclude_regex`、`keep_branches` 移除的 term 处停止，因此不会出现与 selected
+  term 断开的后代；`Inf` 表示不扩展。
 - 每个剪枝结果都带 `provenance`（`package_version`、`r_version`、`source`、`stat`、
   `counts`、`generated_at`），可用 `jsonlite::write_json(x$provenance, "run.json")`
   与图片一起保存。
@@ -287,6 +289,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.14>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.15>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

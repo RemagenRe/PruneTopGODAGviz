@@ -60,7 +60,11 @@ the full ancestry up to the ontology root.}
 
 \item{expand_depth}{Number of directed edges to follow below each selected
 term (breadth-first from every selected term).  \code{0} keeps only the
-selected terms and their ancestors.}
+selected terms and their ancestors.  Expansion stops at terms removed by
+\code{drop}, \code{drop_subtree}, \code{exclude_regex} or \code{keep_branches}: a descendant
+that can only be reached through a removed term is not displayed (the
+pruning table records it as \code{disconnected}).  Use a non-negative finite
+number; \code{Inf} disables expansion.}
 
 \item{collapse_chains}{Collapse linear, non-selected ancestor chains.}
 
@@ -72,7 +76,8 @@ never merged away; only non-selected sibling leaves can be merged.}
 
 \item{max_nodes}{Target cap on the number of displayed terms.  Selected terms
 are protected, so when they alone exceed the cap the graph keeps them, a
-warning is issued and \code{params$max_nodes_exceeded} is \code{TRUE}.}
+warning reports how many nodes remain and how many of them are selected,
+and \code{params$max_nodes_exceeded} is \code{TRUE}.}
 
 \item{wrap}{Number of characters per line when wrapping term names.}
 
