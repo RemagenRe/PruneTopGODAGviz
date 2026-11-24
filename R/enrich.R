@@ -168,7 +168,8 @@ enrich_go <- function(gene, annotation, ont = "BP", universe = NULL,
     fold <- rich_factor * N / n
     mu <- M * n / N
     sigma <- mu * (N - n) * (N - M) / N / (N - 1)
-    zscore <- (k - mu) / sqrt(sigma)
+    zscore <- ifelse(is.finite(sigma) & sigma > 0,
+                     (k - mu) / sqrt(sigma), NA_real_)
     gene_id <- vapply(q_sets, paste, character(1), collapse = "/")
     desc <- t2n$name[match(q_terms, t2n$go_id)]
     desc[is.na(desc)] <- q_terms[is.na(desc)]

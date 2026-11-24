@@ -17,6 +17,9 @@
 #' @param relax_iter Maximum number of relaxation iterations.
 #' @param gap Minimum gap between boxes, in inches.
 #' @param rankdir Layout direction used for nodes without coordinates.
+#' @param edge_style Edge routing style: `"hybrid"` (default), `"bezier"`,
+#'   `"orthogonal"` or `"straight"`.  Use `"bezier"` to reproduce the editor's
+#'   cubic-bezier edges.
 #' @param verbose Print a summary.
 #'
 #' @return A `go_dag_layout` object.
@@ -25,7 +28,11 @@ layout_from_positions <- function(dag, positions, fontsize = 7,
                                   lineheight = 0.9, family = "Arial",
                                   node_pad = 0.06, scale = 1 / 96,
                                   relax = TRUE, relax_iter = 80, gap = 0.04,
-                                  rankdir = "TB", verbose = TRUE) {
+                                  rankdir = "TB",
+                                  edge_style = c("hybrid", "bezier",
+                                                 "orthogonal", "straight"),
+                                  verbose = TRUE) {
+    edge_style <- match.arg(edge_style)
     if (!inherits(dag, "pruned_go_dag")) {
         stop("'dag' must be a pruned_go_dag object.", call. = FALSE)
     }
@@ -111,7 +118,7 @@ layout_from_positions <- function(dag, positions, fontsize = 7,
     bbox$height <- bbox$ymax - bbox$ymin
 
     out <- list(nodes = nodes, edges = ed, segments = NULL, bbox = bbox,
-                rankdir = rankdir, edge_style = "hybrid", source = "positions",
+                rankdir = rankdir, edge_style = edge_style, source = "positions",
                 params = list(level_gap = NA_real_, sibling_gap = gap,
                               node_pad = node_pad, fontsize = fontsize,
                               lineheight = lineheight, family = family,

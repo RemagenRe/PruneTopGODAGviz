@@ -83,7 +83,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.13/PruneTopGODAGviz_0.1.13.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.14/PruneTopGODAGviz_0.1.14.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -99,7 +99,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-The expected version is `0.1.13`.
+The expected version is `0.1.14`.
 
 ## Shiny editor
 
@@ -155,6 +155,8 @@ before parsing.
   GO evidence; see `inst/extdata/DATA_PROVENANCE.md`.
 - Selected terms are never merged by `cluster_jaccard`; `max_nodes` is a target
   and protected terms are kept, with a warning when the target cannot be met.
+- `expand_depth` counts directed edges below each selected term (breadth-first),
+  not global GO levels; `0` keeps only selected terms and their ancestors.
 - Every pruned object carries `provenance` (`package_version`, `r_version`,
   `source`, `stat`, `counts`, `generated_at`); write it next to a figure with
   `jsonlite::write_json(x$provenance, "run.json", auto_unbox = TRUE)`.
@@ -209,6 +211,10 @@ genes. Source and licence information are in
 
 ## R usage
 
+The annotation table needs at least the identifier and GO ID columns. The term
+name and ontology columns are optional: names fall back to the GO ID, and the
+ontology can be supplied with `ont`.
+
 ```r
 library(PruneTopGODAGviz)
 
@@ -259,7 +265,7 @@ plot_go_dag_interactive(pruned, file = "BP_pruned.html")
 
 The export panel supports:
 
-- **Match on-screen layout**: reuse the panel spacing and curved edges (default);
+- **Match on-screen layout**: reuse the captured screen positions, panel spacing and the same single-cubic bezier edges used by the editor (default);
 - **Auto Size** off: fill the requested Width/Height exactly;
 - **Include colour legend in the figure**: optional colour legend;
 - export filenames include seconds to avoid overwriting.
@@ -298,6 +304,6 @@ Package code: MIT. Built-in annotation tables retain their upstream terms; see
 ## Links
 
 - Repository: <https://github.com/RemagenRe/PruneTopGODAGviz>
-- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.13>
+- Latest release: <https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.14>
 - Issues: <https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - Chinese README: [README_zh.md](README_zh.md)

@@ -78,7 +78,7 @@ install.packages(
 
 ```r
 install.packages(
-  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.13/PruneTopGODAGviz_0.1.13.tar.gz",
+  "https://github.com/RemagenRe/PruneTopGODAGviz/releases/download/v0.1.14/PruneTopGODAGviz_0.1.14.tar.gz",
   repos = NULL,
   type = "source",
   dependencies = TRUE
@@ -94,7 +94,7 @@ library(PruneTopGODAGviz)
 packageVersion("PruneTopGODAGviz")
 ```
 
-应显示 `0.1.13`。
+应显示 `0.1.14`。
 
 ## Shiny 编辑器
 
@@ -140,6 +140,8 @@ PruneTopGODAGviz::run_app()
   携带的仍是基因级 GO 证据，见 `inst/extdata/DATA_PROVENANCE.md`。
 - `cluster_jaccard` 不会合并 selected term；`max_nodes` 是目标上限，受保护的 term
   会被保留，达不到上限时给出警告。
+- `expand_depth` 从每个 selected term 沿有向边向下数“边数”（BFS），不是全局 GO
+  层级；`0` 只保留 selected term 及其祖先。
 - 每个剪枝结果都带 `provenance`（`package_version`、`r_version`、`source`、`stat`、
   `counts`、`generated_at`），可用 `jsonlite::write_json(x$provenance, "run.json")`
   与图片一起保存。
@@ -193,6 +195,9 @@ OBO 不可用时，`go_dag()` 使用 `GO.db`，并将所有关系标记为 `is_a
 
 ## 编程方式
 
+注释表至少需要 ID 列与 GO ID 列；term 名称与本体列可选：缺名称时用 GO ID 显示，
+本体可用 `ont` 指定。
+
 ```r
 library(PruneTopGODAGviz)
 
@@ -243,7 +248,7 @@ plot_go_dag_interactive(pruned, file = "BP_pruned.html")
 
 导出面板支持：
 
-- **Match on-screen layout**：沿用网页的间距和曲线连线（默认开启）；
+- **Match on-screen layout**：沿用抓取到的网页节点位置、间距，以及与编辑器相同的单条三次贝塞尔曲线（默认开启）；
 - 关闭 **Auto Size** 后，按指定的 Width/Height 精确填满页面；
 - **Include colour legend in the figure**：可选是否在图中保留颜色图例；
 - 导出文件名精确到秒，避免同一分钟内覆盖。
@@ -282,6 +287,6 @@ citation("PruneTopGODAGviz")
 ## 链接
 
 - GitHub 仓库：<https://github.com/RemagenRe/PruneTopGODAGviz>
-- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.13>
+- 最新 Release：<https://github.com/RemagenRe/PruneTopGODAGviz/releases/tag/v0.1.14>
 - 问题反馈：<https://github.com/RemagenRe/PruneTopGODAGviz/issues>
 - English README：[README.md](README.md)

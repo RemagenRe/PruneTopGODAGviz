@@ -1045,6 +1045,8 @@ app_server <- function(input, output, session) {
                 layout_from_positions(d, pos, fontsize = input$fontsize,
                                       lineheight = lh_used,
                                       family = "Arial", rankdir = "TB",
+                                      edge_style = edge_style,
+                                      relax = !match_screen,
                                       verbose = FALSE)
             } else {
                 layout_go_dag(d, fontsize = input$fontsize,

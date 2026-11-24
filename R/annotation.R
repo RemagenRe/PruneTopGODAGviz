@@ -8,7 +8,10 @@
 #'
 #' @param file Path to a CSV or TSV file.
 #' @param col_transcript,col_go,col_name,col_ontology,col_def Column names.
-#'   `NULL` means auto-detection by regular expression.
+#'   `NULL` means auto-detection by regular expression.  The transcript and
+#'   GO identifier columns are required; the term name is optional (the GO ID
+#'   is shown when it is absent), and the ontology column may be omitted when
+#'   `ont` is supplied.
 #' @param sep Field separator, or `"auto"` to guess from the first line.
 #' @param ont Restrict the annotation to one ontology (`"BP"`, `"MF"`, `"CC"`).
 #'   `NULL` keeps all ontologies present in the file.
@@ -47,7 +50,7 @@ read_go_annotation <- function(file, col_transcript = NULL, col_go = NULL,
     if (manual) header <- manual_header
     header_clean <- trimws(header)
 
-    pick <- function(spec, patterns, what) {
+    pick <- function(spec, patterns, what, required = TRUE) {
         if (!is.null(spec)) {
             if (!spec %in% header) {
                 stop("Column '", spec, "' (", what, ") not found. Available: ",
@@ -59,6 +62,7 @@ read_go_annotation <- function(file, col_transcript = NULL, col_go = NULL,
             hit <- grep(pat, tolower(header_clean), value = FALSE, perl = TRUE)
             if (length(hit)) return(header[hit[[1]]])
         }
+        if (!isTRUE(required)) return(NULL)
         stop("Could not detect the ", what, " column. Supply it explicitly. Available: ",
              paste(header, collapse = ", "), call. = FALSE)
     }
@@ -71,8 +75,10 @@ read_go_annotation <- function(file, col_transcript = NULL, col_go = NULL,
     }
     col_transcript <- pick(col_transcript, key_patterns, keytype)
     col_go <- pick(col_go, c("^go_?id$", "^go$", "goid"), "GO id")
-    col_name <- pick(col_name, c("name_1006", "^term_?name$", "^term$", "^name$"), "term name")
-    col_ontology <- pick(col_ontology, c("namespace", "ontology", "^ont$"), "ontology")
+    col_name <- pick(col_name, c("name_1006", "^term_?name$", "^term$", "^name$"),
+                     "term name", required = FALSE)
+    col_ontology <- pick(col_ontology, c("namespace", "ontology", "^ont$"),
+                         "ontology", required = FALSE)
     if (!is.null(col_def) || isTRUE(include_def)) {
         col_def <- pick(col_def, c("^description$", "^def$"), "definition")
     } else {
@@ -94,8 +100,16 @@ read_go_annotation <- function(file, col_transcript = NULL, col_go = NULL,
 
     tr <- trimws(dt[[col_transcript]])
     go <- toupper(trimws(dt[[col_go]]))
-    nm <- trimws(dt[[col_name]])
-    on <- .norm_ontology(dt[[col_ontology]])
+    nm <- if (is.null(col_name)) {
+        rep(NA_character_, nrow(dt))
+    } else {
+        trimws(dt[[col_name]])
+    }
+    on <- if (is.null(col_ontology)) {
+        rep(NA_character_, nrow(dt))
+    } else {
+        .norm_ontology(dt[[col_ontology]])
+    }
     df <- if (is.null(col_def)) {
         rep(NA_character_, length(tr))
     } else {
@@ -109,6 +123,23 @@ read_go_annotation <- function(file, col_transcript = NULL, col_go = NULL,
     if (!length(go)) {
         stop("No valid 'GO:0000000'-style identifiers found in column '", col_go, "'.",
              call. = FALSE)
+    }
+    if (is.null(col_ontology)) {
+        if (is.null(ont)) {
+            stop("No ontology information found; supply 'ont' or a namespace column.",
+                 call. = FALSE)
+        }
+        on[] <- .check_ont(ont)
+    } else if (!is.null(ont)) {
+        ont_chk <- .check_ont(ont)
+        # `ont` selects one ontology from a possibly multi-ontology file.
+        keep_ont <- is.na(on) | on == ont_chk
+        tr <- tr[keep_ont]; go <- go[keep_ont]; nm <- nm[keep_ont]
+        on <- on[keep_ont]; df <- df[keep_ont]
+        on[is.na(on)] <- ont_chk
+        if (!length(go)) {
+            stop("No rows remain for ontology '", ont_chk, "'.", call. = FALSE)
+        }
     }
     if (all(is.na(on))) {
         if (is.null(ont)) {

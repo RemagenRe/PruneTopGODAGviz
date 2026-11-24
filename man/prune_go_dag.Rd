@@ -58,7 +58,9 @@ terms and their ancestors) are kept.}
 \item{max_depth}{Maximum number of steps above a selected term.  \code{Inf} keeps
 the full ancestry up to the ontology root.}
 
-\item{expand_depth}{Number of levels below selected terms to keep.}
+\item{expand_depth}{Number of directed edges to follow below each selected
+term (breadth-first from every selected term).  \code{0} keeps only the
+selected terms and their ancestors.}
 
 \item{collapse_chains}{Collapse linear, non-selected ancestor chains.}
 

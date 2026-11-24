@@ -317,6 +317,13 @@ plot_go_dag <- function(x, layout = NULL, fill = c("#2878B5", "#FFFFFF", "#c8242
         if (style == "straight") {
             bx <- pts[, 1]
             by <- pts[, 2]
+        } else if (style == "bezier" && nrow(pts) > 2L) {
+            # visNetwork's cubicBezier goes straight from the source border to
+            # the target border; intermediate layout waypoints are ignored.
+            sm <- .smooth_route(pts[c(1L, nrow(pts)), , drop = FALSE],
+                                n_per = max(8L, n), rankdir = layout$rankdir)
+            bx <- sm[, 1]
+            by <- sm[, 2]
         } else if (style == "orthogonal" ||
                    (style == "hybrid" && nrow(pts) > 2L)) {
             po <- ed$route_ortho[[i]]

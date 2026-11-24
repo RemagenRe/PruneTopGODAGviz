@@ -87,6 +87,16 @@ dag_descendants <- function(dag, ids, include_self = TRUE) {
     setNames(out, igraph::V(g)$name)
 }
 
+.dag_descendant_distance <- function(dag, ids) {
+    g <- .dag_graph(dag)
+    idx <- match(unique(ids), igraph::V(g)$name)
+    idx <- idx[!is.na(idx)]
+    if (!length(idx)) return(stats::setNames(numeric(), character()))
+    d <- igraph::distances(g, v = idx, mode = "out")
+    out <- apply(d, 2, min)
+    out[!is.finite(out)] <- Inf
+    stats::setNames(out, igraph::V(g)$name)
+}
 .dag_subset <- function(dag, ids) {
     ids <- unique(ids)
     list(nodes = dag$nodes[dag$nodes$id %in% ids, , drop = FALSE],

@@ -16,6 +16,7 @@ layout_from_positions(
   relax_iter = 80,
   gap = 0.04,
   rankdir = "TB",
+  edge_style = c("hybrid", "bezier", "orthogonal", "straight"),
   verbose = TRUE
 )
 }
@@ -42,6 +43,10 @@ list of \code{c(x = , y = )}, or a two-column matrix with node ids as row names.
 \item{gap}{Minimum gap between boxes, in inches.}
 
 \item{rankdir}{Layout direction used for nodes without coordinates.}
+
+\item{edge_style}{Edge routing style: \code{"hybrid"} (default), \code{"bezier"},
+\code{"orthogonal"} or \code{"straight"}.  Use \code{"bezier"} to reproduce the editor's
+cubic-bezier edges.}
 
 \item{verbose}{Print a summary.}
 }

@@ -21,7 +21,9 @@
 #' @param keep_ancestors Add ancestors of selected terms.
 #' @param max_depth Maximum number of steps above a selected term.  `Inf` keeps
 #'   the full ancestry up to the ontology root.
-#' @param expand_depth Number of levels below selected terms to keep.
+#' @param expand_depth Number of directed edges to follow below each selected
+#'   term (breadth-first from every selected term).  `0` keeps only the
+#'   selected terms and their ancestors.
 #' @param collapse_chains Collapse linear, non-selected ancestor chains.
 #' @param collapse_min_length Minimum chain length (in terms) to collapse.
 #' @param cluster_jaccard Merge sibling leaves whose gene sets have a Jaccard
@@ -101,6 +103,7 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
 
     reason <- stats::setNames(rep("off_path", nrow(dag$nodes)), dag$nodes$id)
     reason[selected] <- "kept"
+    blocked <- character()
 
     branch_roots <- character()
     if (!is.null(keep_branches)) {
@@ -115,6 +118,7 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
                     " selected term(s) outside 'keep_branches'.", call. = FALSE)
             reason[outside] <- "outside_branch"
         }
+        blocked <- union(blocked, setdiff(dag$nodes$id, allowed))
         selected <- intersect(selected, allowed)
         if (!length(selected)) {
             stop("No selected term remains inside 'keep_branches'.", call. = FALSE)
@@ -130,12 +134,6 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
         }
         cand <- union(cand, anc)
     }
-    if (is.finite(expand_depth) && expand_depth > 0) {
-        lev <- .dag_levels(dag)
-        desc <- dag_descendants(dag, selected)
-        max_lev <- max(lev[selected], na.rm = TRUE) + expand_depth
-        cand <- union(cand, desc[lev[desc] <= max_lev])
-    }
     cand <- union(cand, branch_roots)
 
     if (!is.null(drop_subtree)) {
@@ -147,6 +145,7 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
                     call. = FALSE)
         }
         cand <- setdiff(cand, rem)
+        blocked <- union(blocked, rem)
         reason[intersect(rem, names(reason))] <- "drop_subtree"
         selected <- setdiff(selected, rem)
     }
@@ -162,18 +161,21 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
         }
         cand <- setdiff(cand, rem)
         selected <- setdiff(selected, rem)
+        blocked <- union(blocked, rem)
         reason[rem] <- "explicit"
     }
     if (!is.null(exclude_regex)) {
         hit <- dag$nodes$id[grepl(exclude_regex, dag$nodes$name, ignore.case = TRUE)]
         cand <- setdiff(cand, hit)
         selected <- setdiff(selected, hit)
+        blocked <- union(blocked, hit)
         reason[intersect(hit, names(reason))] <- "exclude_regex"
     }
     if (!is.null(include_regex)) {
         must <- union(selected, dag_ancestors(dag, selected))
         hit <- dag$nodes$id[grepl(include_regex, dag$nodes$name, ignore.case = TRUE)]
         keep_re <- intersect(cand, union(must, hit))
+        blocked <- union(blocked, setdiff(dag$nodes$id, union(must, hit)))
         reason[setdiff(cand, keep_re)] <- "exclude_regex"
         cand <- keep_re
     }
@@ -181,10 +183,23 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
         stop("All selected terms were removed by the filters.", call. = FALSE)
     }
 
+    expanded <- character()
+    if (is.finite(expand_depth) && expand_depth > 0) {
+        dist <- .dag_descendant_distance(dag, selected)
+        expanded <- names(dist)[is.finite(dist) & dist > 0 &
+                                    dist <= expand_depth]
+        # Explicit drop / exclude filters always win over expansion.
+        expanded <- setdiff(expanded, blocked)
+        expanded <- intersect(expanded, dag$nodes$id)
+        cand <- union(cand, expanded)
+    }
+
     sub <- .dag_subset(dag, cand)
     needed <- union(selected, dag_ancestors(sub, selected))
-    keep_final <- intersect(cand, union(needed, branch_roots))
+    keep_final <- intersect(cand, union(union(needed, expanded),
+                                        branch_roots))
     reason[setdiff(cand, keep_final)] <- "off_path"
+    reason[expanded] <- "expanded"
 
     nodes <- dag$nodes[dag$nodes$id %in% keep_final, , drop = FALSE]
     edges <- dag$edges[dag$edges$parent %in% keep_final &
@@ -241,6 +256,8 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
     lev <- .dag_levels(list(nodes = nodes, edges = edges))
     nodes$level <- as.integer(lev[nodes$id])
     nodes$selected <- nodes$id %in% selected
+    nodes$role <- ifelse(nodes$id %in% selected, "selected",
+                  ifelse(nodes$id %in% expanded, "expanded", "ancestor"))
     nodes$n_collapsed <- as.integer(n_collapsed[nodes$id])
     nodes$n_collapsed[is.na(nodes$n_collapsed)] <- 0L
     nodes$collapsed_ids <- vapply(nodes$id, function(id) {
@@ -428,6 +445,14 @@ prune_go_dag <- function(x, dag = NULL, top_n = 10, p_cutoff = 0.05,
 
 .cluster_jaccard <- function(nodes, edges, selected, annotation, stat_map,
                              threshold) {
+    if (is.null(annotation) || is.null(annotation$pairs) ||
+        !nrow(annotation$pairs)) {
+        warning("cluster_jaccard needs transcript-GO pairs; no annotation is ",
+                "available (for example for imported results). Merging is ",
+                "skipped.", call. = FALSE)
+        return(list(nodes = nodes, edges = edges, merged = character(),
+                    n_collapsed = integer(), collapsed = list()))
+    }
     merged <- character()
     n_collapsed <- integer()
     collapsed <- list()
@@ -494,7 +519,11 @@ write_prune_table <- function(x, file) {
     }
     kept <- data.frame(
         go_id = x$nodes$id, name = x$nodes$name, p.adjust = x$nodes$p.adjust,
-        action = ifelse(x$nodes$selected, "kept_selected", "kept_ancestor"),
+        action = if ("role" %in% names(x$nodes)) {
+            paste0("kept_", x$nodes$role)
+        } else {
+            ifelse(x$nodes$selected, "kept_selected", "kept_ancestor")
+        },
         reason = ifelse(x$nodes$n_collapsed > 0,
                         paste0("collapsed_", x$nodes$n_collapsed), ""),
         stringsAsFactors = FALSE)

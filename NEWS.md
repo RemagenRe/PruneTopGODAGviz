@@ -1,3 +1,16 @@
+# PruneTopGODAGviz 0.1.14
+
+* `expand_depth` now follows each selected term by directed breadth-first hops
+  and keeps the expanded descendants; explicit drop and exclude filters still
+  take precedence, and `expand_depth = 0` is unchanged.
+* `read_go_annotation()` accepts identifier + GO ID tables: term names fall back
+  to GO IDs and the ontology can be supplied with `ont`.
+* `zScore` is `NA` when the hypergeometric variance is zero or non-finite.
+* `cluster_jaccard` warns and skips merging when no transcript-GO pairs exist
+  (for example for imported results); expanded non-selected leaves can now be
+  merged.
+* Screen-matched export reuses the captured screen positions and draws each
+  bezier edge as a single cubic, matching the editor geometry.
 # PruneTopGODAGviz 0.1.13
 
 * Fix the `GeneRatio` / `BgRatio` fallback: counts now use the numerator

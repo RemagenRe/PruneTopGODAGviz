@@ -22,7 +22,10 @@ read_go_annotation(
 \item{file}{Path to a CSV or TSV file.}
 
 \item{col_transcript, col_go, col_name, col_ontology, col_def}{Column names.
-\code{NULL} means auto-detection by regular expression.}
+\code{NULL} means auto-detection by regular expression.  The transcript and
+GO identifier columns are required; the term name is optional (the GO ID
+is shown when it is absent), and the ontology column may be omitted when
+\code{ont} is supplied.}
 
 \item{sep}{Field separator, or \code{"auto"} to guess from the first line.}
 
